@@ -83,6 +83,20 @@ export function DocsIcon() {
   );
 }
 
+export function WalletIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none">
+      <path
+        d="M2.5 5.3h9.7a1.8 1.8 0 0 1 1.8 1.8v3.6a1.8 1.8 0 0 1-1.8 1.8h-8a1.8 1.8 0 0 1-1.8-1.8V4.3a1.3 1.3 0 0 1 1.3-1.3h7.7"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <circle cx="10.8" cy="9" r="0.9" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function SendIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none">

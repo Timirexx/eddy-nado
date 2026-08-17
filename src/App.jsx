@@ -14,6 +14,7 @@ export default function App() {
   const [isTyping, setIsTyping] = useState(false);
   const [replyIndex, setReplyIndex] = useState(2);
   const [activeNav, setActiveNav] = useState('chat');
+  const [signedIn, setSignedIn] = useState(false);
 
   function handleSend(text) {
     const trimmed = (text ?? input).trim();
@@ -49,7 +50,12 @@ export default function App() {
           onNewChat={handleNewChat}
         />
         <div className="main">
-          <TopBar title="Position review" subtitle="Today, 14:02" />
+          <TopBar
+            title="Position review"
+            subtitle="Today, 14:02"
+            signedIn={signedIn}
+            onToggleSignIn={() => setSignedIn((s) => !s)}
+          />
           <MessageThread messages={messages} isTyping={isTyping} />
           <ChipsRow chips={chips} onPick={handleSend} disabled={isTyping} />
           <Composer value={input} onChange={setInput} onSend={() => handleSend()} disabled={isTyping} />
