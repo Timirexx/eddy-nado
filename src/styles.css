@@ -266,6 +266,10 @@ nav.primary-nav { display: flex; flex-direction: column; gap: 2px; }
   flex-direction: column;
   gap: 12px;
 }
+.account-card-empty { align-items: center; text-align: center; padding: 22px 16px; }
+.account-empty-text { margin: 0; font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
+.account-demo-note { font-size: 10.5px; color: var(--text-faint); text-align: center; padding-top: 2px; }
+
 .account-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .wallet-addr {
   font-family: var(--font-mono);
@@ -377,6 +381,8 @@ nav.primary-nav { display: flex; flex-direction: column; gap: 2px; }
 }
 .grounding-pill svg { width: 12px; height: 12px; opacity: 0.75; }
 
+.wallet-btn-slot { display: inline-flex; }
+
 .wallet-btn {
   display: inline-flex;
   align-items: center;
@@ -413,6 +419,15 @@ nav.primary-nav { display: flex; flex-direction: column; gap: 2px; }
   background: var(--glass-bg);
   border-color: var(--good);
   box-shadow: 0 8px 18px var(--glass-shadow);
+}
+
+.wallet-btn.wrong-network {
+  color: var(--critical);
+  background: var(--critical-soft);
+}
+.wallet-btn.wrong-network:hover {
+  background: var(--critical-soft);
+  box-shadow: 0 8px 18px var(--glass-shadow), 0 0 0 1px var(--critical);
 }
 
 .thread {

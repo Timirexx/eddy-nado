@@ -1,6 +1,4 @@
 export const account = {
-  address: '0x8f2c…c91a',
-  network: 'Ink · Mainnet',
   equity: '$12,480.32',
   health: 82,
   positions: [

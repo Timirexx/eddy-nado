@@ -1,3 +1,4 @@
+import { useAccount } from 'wagmi';
 import {
   EddyMark,
   ChatIcon,
@@ -14,7 +15,13 @@ const NAV_ITEMS = [
   { key: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 
+function truncateAddress(address) {
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
+
 export default function Sidebar({ account, activeNav, onNavChange, onNewChat }) {
+  const { address, isConnected, chain } = useAccount();
+
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -45,41 +52,49 @@ export default function Sidebar({ account, activeNav, onNavChange, onNewChat }) 
       </nav>
 
       <div className="sidebar-label">Your account</div>
-      <div className="account-card">
-        <div className="account-row">
-          <span className="wallet-addr">{account.address}</span>
-          <span className="chain-pill">
-            <span className="dot live" />
-            {account.network}
-          </span>
-        </div>
-        <div>
-          <div className="equity-label">Account equity</div>
-          <div className="equity-figure">{account.equity}</div>
-        </div>
-        <div className="health-block">
-          <div className="health-header">
-            <span className="health-title">Margin health</span>
-            <span className="health-value">{account.health}%</span>
+
+      {isConnected && address ? (
+        <div className="account-card">
+          <div className="account-row">
+            <span className="wallet-addr">{truncateAddress(address)}</span>
+            <span className="chain-pill">
+              <span className="dot live" />
+              {chain?.name ?? 'Unknown network'}
+            </span>
           </div>
-          <div className="health-track">
-            <div className="health-fill" style={{ width: `${account.health}%` }} />
+          <div>
+            <div className="equity-label">Account equity</div>
+            <div className="equity-figure">{account.equity}</div>
           </div>
-        </div>
-        <div className="positions-list">
-          {account.positions.map((p) => (
-            <div className="position-row" key={p.symbol}>
-              <span className="position-name">
-                <span className={`side-tag ${p.side}`}>{p.side.toUpperCase()}</span>
-                {p.symbol}
-              </span>
-              <span className={`position-pnl ${p.pnl.startsWith('-') || p.pnl.startsWith('−') ? 'down' : 'up'}`}>
-                {p.pnl}
-              </span>
+          <div className="health-block">
+            <div className="health-header">
+              <span className="health-title">Margin health</span>
+              <span className="health-value">{account.health}%</span>
             </div>
-          ))}
+            <div className="health-track">
+              <div className="health-fill" style={{ width: `${account.health}%` }} />
+            </div>
+          </div>
+          <div className="positions-list">
+            {account.positions.map((p) => (
+              <div className="position-row" key={p.symbol}>
+                <span className="position-name">
+                  <span className={`side-tag ${p.side}`}>{p.side.toUpperCase()}</span>
+                  {p.symbol}
+                </span>
+                <span className={`position-pnl ${p.pnl.startsWith('-') || p.pnl.startsWith('−') ? 'down' : 'up'}`}>
+                  {p.pnl}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="account-demo-note">Sample data — Nado account sync isn't wired up yet.</div>
         </div>
-      </div>
+      ) : (
+        <div className="account-card account-card-empty">
+          <p className="account-empty-text">Connect a wallet to see your positions, margin health, and account equity.</p>
+        </div>
+      )}
 
       <div className="sidebar-footer">
         Eddy reads your subaccount and Nado's docs to answer — it never signs or places trades on its own.

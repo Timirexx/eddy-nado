@@ -1,6 +1,7 @@
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { GroundingIcon, WalletIcon } from './icons.jsx';
 
-export default function TopBar({ title, subtitle, connected, onToggleConnect }) {
+export default function TopBar({ title, subtitle }) {
   return (
     <header className="topbar">
       <div>
@@ -12,23 +13,35 @@ export default function TopBar({ title, subtitle, connected, onToggleConnect }) 
           <GroundingIcon />
           Grounded in Nado docs + live account data
         </span>
-        <button
-          type="button"
-          className={connected ? 'wallet-btn connected' : 'wallet-btn'}
-          onClick={onToggleConnect}
-        >
-          {connected ? (
-            <>
-              <span className="dot live" />
-              0x8f2c…c91a
-            </>
-          ) : (
-            <>
-              <WalletIcon />
-              Connect Wallet
-            </>
-          )}
-        </button>
+        <ConnectButton.Custom>
+          {({ account, chain, openConnectModal, openAccountModal, openChainModal, mounted }) => {
+            const ready = mounted;
+            const connected = ready && account && chain;
+
+            return (
+              <div
+                className="wallet-btn-slot"
+                {...(!ready && { 'aria-hidden': true, style: { opacity: 0, pointerEvents: 'none' } })}
+              >
+                {!connected ? (
+                  <button type="button" className="wallet-btn" onClick={openConnectModal}>
+                    <WalletIcon />
+                    Connect Wallet
+                  </button>
+                ) : chain.unsupported ? (
+                  <button type="button" className="wallet-btn wrong-network" onClick={openChainModal}>
+                    Wrong network
+                  </button>
+                ) : (
+                  <button type="button" className="wallet-btn connected" onClick={openAccountModal}>
+                    <span className="dot live" />
+                    {account.displayName}
+                  </button>
+                )}
+              </div>
+            );
+          }}
+        </ConnectButton.Custom>
       </div>
     </header>
   );
