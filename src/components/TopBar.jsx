@@ -1,6 +1,6 @@
 import { GroundingIcon, WalletIcon } from './icons.jsx';
 
-export default function TopBar({ title, subtitle, signedIn, onToggleSignIn }) {
+export default function TopBar({ title, subtitle, connected, onToggleConnect }) {
   return (
     <header className="topbar">
       <div>
@@ -14,10 +14,10 @@ export default function TopBar({ title, subtitle, signedIn, onToggleSignIn }) {
         </span>
         <button
           type="button"
-          className={signedIn ? 'signin-btn connected' : 'signin-btn'}
-          onClick={onToggleSignIn}
+          className={connected ? 'wallet-btn connected' : 'wallet-btn'}
+          onClick={onToggleConnect}
         >
-          {signedIn ? (
+          {connected ? (
             <>
               <span className="dot live" />
               0x8f2c…c91a
@@ -25,7 +25,7 @@ export default function TopBar({ title, subtitle, signedIn, onToggleSignIn }) {
           ) : (
             <>
               <WalletIcon />
-              Sign in
+              Connect Wallet
             </>
           )}
         </button>

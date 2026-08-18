@@ -377,7 +377,7 @@ nav.primary-nav { display: flex; flex-direction: column; gap: 2px; }
 }
 .grounding-pill svg { width: 12px; height: 12px; opacity: 0.75; }
 
-.signin-btn {
+.wallet-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -393,23 +393,23 @@ nav.primary-nav { display: flex; flex-direction: column; gap: 2px; }
   white-space: nowrap;
   transition: transform 160ms cubic-bezier(.22,.85,.32,1.4), background 160ms ease, box-shadow 160ms ease, color 160ms ease, border-color 160ms ease;
 }
-.signin-btn svg { width: 13px; height: 13px; }
-.signin-btn:hover {
+.wallet-btn svg { width: 13px; height: 13px; }
+.wallet-btn:hover {
   background: var(--accent-strong);
   transform: translateY(-1px);
   box-shadow: 0 8px 20px var(--accent-glow);
 }
-.signin-btn:active { transform: translateY(0) scale(0.97); }
-.signin-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wallet-btn:active { transform: translateY(0) scale(0.97); }
+.wallet-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.signin-btn.connected {
+.wallet-btn.connected {
   font-family: var(--font-mono);
   letter-spacing: 0.01em;
   color: var(--good);
   background: var(--glass-bg);
   border-color: var(--glass-border);
 }
-.signin-btn.connected:hover {
+.wallet-btn.connected:hover {
   background: var(--glass-bg);
   border-color: var(--good);
   box-shadow: 0 8px 18px var(--glass-shadow);
