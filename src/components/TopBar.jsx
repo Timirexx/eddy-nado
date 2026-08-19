@@ -30,7 +30,7 @@ export default function TopBar({ title, subtitle }) {
                   </button>
                 ) : chain.unsupported ? (
                   <button type="button" className="wallet-btn wrong-network" onClick={openChainModal}>
-                    Wrong network
+                    Switch to Ink
                   </button>
                 ) : (
                   <button type="button" className="wallet-btn connected" onClick={openAccountModal}>

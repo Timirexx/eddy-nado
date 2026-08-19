@@ -14,7 +14,7 @@ import {
   safeWallet,
   walletConnectWallet,
 } from '@rainbow-me/rainbowkit/wallets';
-import { ink, mainnet } from 'wagmi/chains';
+import { ink } from 'wagmi/chains';
 
 const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
 
@@ -62,10 +62,14 @@ const walletConnectWallets = {
   ],
 };
 
+// Nado exists only on Ink (chain 57073), so Ink is the sole supported chain.
+// Listing any other chain here would make a wallet connected to it look
+// healthy while every Nado action silently fails; keeping the list to Ink
+// means anything else trips chain.unsupported and prompts a switch instead.
 export const config = getDefaultConfig({
   appName: 'Eddy for Nado',
   projectId: projectId || 'YOUR_PROJECT_ID',
-  chains: [ink, mainnet],
+  chains: [ink],
   ssr: false,
   wallets: hasWalletConnect ? [installedWallets, walletConnectWallets] : [installedWallets],
 });
