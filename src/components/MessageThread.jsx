@@ -1,89 +1,105 @@
-import { useEffect, useRef } from 'react';
-import { EddyAvatar, DocsIcon } from './icons.jsx';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { EddyAvatar } from './icons.jsx';
 
-function renderInline(text) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i}>{part.slice(2, -2)}</strong>;
-    }
-    return <span key={i}>{part}</span>;
-  });
-}
-
-function SourceTag({ source }) {
-  if (!source) return null;
-  return (
-    <div className="msg-source">
-      {source.kind === 'live' ? <span className="src-live">●</span> : <DocsIcon />}
-      {source.label}
+/**
+ * react-markdown escapes raw HTML by default, so model output cannot inject
+ * markup into the page. Links are the one live element, and they get
+ * noopener/noreferrer plus an explicit target.
+ */
+const MARKDOWN_COMPONENTS = {
+  a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+  table: ({ node, ...props }) => (
+    <div className="table-scroll">
+      <table {...props} />
     </div>
-  );
-}
+  ),
+};
 
 function Bubble({ message }) {
-  const isAi = message.role === 'ai';
+  const isAssistant = message.role === 'assistant';
+
   return (
-    <div className={`msg from-${isAi ? 'ai' : 'user'}`}>
-      {isAi && (
+    <div className={`msg from-${isAssistant ? 'ai' : 'user'}`}>
+      {isAssistant && (
         <div className="msg-avatar">
           <EddyAvatar />
         </div>
       )}
       <div className="msg-body">
-        <div className="bubble">
-          {message.paragraphs.map((p, i) => (
-            <p key={i}>{renderInline(p)}</p>
-          ))}
-          {message.stats && (
-            <div className="mini-stat-row">
-              {message.stats.map((s) => (
-                <div className="mini-stat" key={s.label}>
-                  <div className="mini-stat-label">{s.label}</div>
-                  <div className="mini-stat-value">{s.value}</div>
-                </div>
-              ))}
-            </div>
-          )}
-          {message.followUp && <p>{renderInline(message.followUp)}</p>}
-        </div>
-        {isAi && <SourceTag source={message.source} />}
+        {message.images?.length > 0 && (
+          <div className="msg-images">
+            {message.images.map((src, i) => (
+              <img key={i} src={src} alt="" className="msg-image" />
+            ))}
+          </div>
+        )}
+
+        {(message.text || message.pending) && (
+          <div className="bubble">
+            {message.pending && !message.text ? (
+              <ThinkingDots />
+            ) : (
+              <div className="markdown">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+                  {message.text}
+                </ReactMarkdown>
+              </div>
+            )}
+          </div>
+        )}
+
+        {message.truncated && (
+          <div className="msg-note">Cut off at the length limit — ask me to continue.</div>
+        )}
       </div>
     </div>
   );
 }
 
-function TypingBubble() {
+function ThinkingDots() {
   return (
-    <div className="msg from-ai">
-      <div className="msg-avatar">
-        <EddyAvatar />
-      </div>
-      <div className="msg-body">
-        <div className="bubble">
-          <p style={{ color: 'var(--text-faint)' }}>thinking…</p>
-        </div>
-      </div>
+    <div className="thinking" aria-label="Eddy is thinking">
+      <span />
+      <span />
+      <span />
     </div>
   );
 }
 
-export default function MessageThread({ messages, isTyping }) {
+export default function MessageThread({ messages, error, emptyState }) {
   const threadRef = useRef(null);
+  const [pinned, setPinned] = useState(true);
 
+  // Follow the stream only while the reader is already at the bottom, so
+  // scrolling up to re-read something isn't yanked back down by each delta.
   useEffect(() => {
-    if (threadRef.current) {
-      threadRef.current.scrollTop = threadRef.current.scrollHeight;
-    }
-  }, [messages, isTyping]);
+    const el = threadRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+      setPinned(distance < 80);
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useLayoutEffect(() => {
+    const el = threadRef.current;
+    if (el && pinned) el.scrollTop = el.scrollHeight;
+  }, [messages, error, pinned]);
+
+  const isEmpty = messages.length === 0;
 
   return (
     <div className="thread" ref={threadRef}>
       <div className="thread-inner">
+        {isEmpty && emptyState}
         {messages.map((m) => (
           <Bubble key={m.id} message={m} />
         ))}
-        {isTyping && <TypingBubble />}
+        {error && <div className="thread-error">{error}</div>}
       </div>
     </div>
   );

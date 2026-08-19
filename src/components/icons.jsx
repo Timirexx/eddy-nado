@@ -97,6 +97,32 @@ export function WalletIcon() {
   );
 }
 
+export function StopIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none">
+      <rect x="4.5" y="4.5" width="7" height="7" rx="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function AttachIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none">
+      <rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.8" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="6" cy="6.6" r="1.1" stroke="currentColor" strokeWidth="1.1" />
+      <path d="M3 11.2 6.2 8.4l2.3 2 2-1.6 2.5 2.4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function CloseIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none">
+      <path d="M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function SendIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none">

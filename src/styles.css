@@ -439,7 +439,15 @@ nav.primary-nav { display: flex; flex-direction: column; gap: 2px; }
   flex-direction: column;
   align-items: center;
 }
-.thread-inner { width: 100%; max-width: 620px; padding: 0 20px; display: flex; flex-direction: column; gap: 22px; }
+.thread-inner {
+  width: 100%;
+  max-width: 620px;
+  min-height: 100%;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
 
 .msg { display: flex; gap: 12px; max-width: 100%; }
 .msg.from-user { justify-content: flex-end; }
@@ -511,6 +519,171 @@ nav.primary-nav { display: flex; flex-direction: column; gap: 2px; }
 }
 .mini-stat-label { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; }
 .mini-stat-value { font-family: var(--font-mono); font-size: 13.5px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+/* ---------- Markdown ---------- */
+.markdown > *:first-child { margin-top: 0; }
+.markdown > *:last-child { margin-bottom: 0; }
+.markdown p { margin: 0 0 10px; }
+.markdown h1, .markdown h2, .markdown h3, .markdown h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 16px 0 7px;
+  letter-spacing: -0.005em;
+}
+.markdown h1 { font-size: 15.5px; }
+.markdown ul, .markdown ol { margin: 0 0 10px; padding-left: 20px; }
+.markdown li { margin-bottom: 4px; }
+.markdown li > p { margin-bottom: 4px; }
+.markdown strong { font-weight: 600; }
+.markdown a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.markdown code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--surface-3);
+  border: 1px solid var(--glass-border);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+.markdown pre {
+  background: var(--surface-3);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 11px 13px;
+  overflow-x: auto;
+  margin: 0 0 10px;
+}
+.markdown pre code { background: none; border: none; padding: 0; font-size: 12.5px; line-height: 1.5; }
+.markdown blockquote {
+  margin: 0 0 10px;
+  padding-left: 12px;
+  border-left: 2px solid var(--glass-border);
+  color: var(--text-muted);
+}
+.markdown hr { border: none; border-top: 1px solid var(--glass-border); margin: 14px 0; }
+.table-scroll { overflow-x: auto; margin: 0 0 10px; }
+.markdown table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.markdown th, .markdown td {
+  border: 1px solid var(--glass-border);
+  padding: 6px 10px;
+  text-align: left;
+}
+.markdown th { font-weight: 600; background: var(--glass-bg); }
+.markdown td { font-variant-numeric: tabular-nums; }
+
+/* ---------- Streaming + notes ---------- */
+.thinking { display: flex; gap: 4px; align-items: center; padding: 3px 0; }
+.thinking span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-faint);
+  animation: thinking-pulse 1.3s ease-in-out infinite;
+}
+.thinking span:nth-child(2) { animation-delay: 0.18s; }
+.thinking span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes thinking-pulse {
+  0%, 60%, 100% { opacity: 0.28; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-2px); }
+}
+
+.msg-note { font-size: 11.5px; color: var(--text-faint); padding: 0 3px; }
+.thread-error {
+  align-self: center;
+  max-width: 460px;
+  font-size: 12.5px;
+  color: var(--critical);
+  background: var(--critical-soft);
+  border: 1px solid var(--critical);
+  border-radius: 10px;
+  padding: 9px 13px;
+  text-align: center;
+}
+
+/* ---------- Attached images ---------- */
+.msg-images { display: flex; flex-wrap: wrap; gap: 7px; }
+.msg.from-user .msg-images { justify-content: flex-end; }
+.msg-image {
+  max-width: 260px;
+  max-height: 260px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  display: block;
+}
+
+.attachments { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 4px 9px; }
+.attachment { position: relative; }
+.attachment img {
+  width: 58px; height: 58px;
+  object-fit: cover;
+  border-radius: 9px;
+  border: 1px solid var(--glass-border);
+  display: block;
+}
+.attachment-remove {
+  position: absolute;
+  top: -6px; right: -6px;
+  width: 19px; height: 19px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: var(--surface);
+  color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+.attachment-remove svg { width: 10px; height: 10px; }
+.attachment-remove:hover { color: var(--critical); border-color: var(--critical); }
+.attach-error { font-size: 11.5px; color: var(--critical); padding: 0 4px 7px; }
+
+.attach-btn {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  align-self: flex-end;
+  margin-bottom: 2px;
+  transition: color 160ms ease, background 160ms ease;
+}
+.attach-btn svg { width: 16px; height: 16px; }
+.attach-btn:hover { color: var(--accent); background: var(--glass-bg); }
+.attach-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.composer-wrap.dragging .composer {
+  border-color: var(--accent);
+  box-shadow: 0 10px 30px var(--glass-shadow), 0 0 0 3px var(--accent-glow);
+}
+
+.send-btn.stop { background: var(--surface-3); color: var(--text); }
+.send-btn.stop:hover { background: var(--surface-3); box-shadow: 0 8px 18px var(--glass-shadow); }
+
+/* ---------- Empty state ---------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 48px 0 12px;
+  margin: auto 0;
+}
+.empty-mark { width: 44px; height: 44px; }
+.empty-title {
+  font-family: var(--font-display);
+  font-size: 25px;
+  font-weight: 400;
+  margin: 4px 0 0;
+  letter-spacing: -0.01em;
+}
+.empty-sub {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin: 0 0 12px;
+  max-width: 400px;
+  line-height: 1.55;
+}
+.empty-state .chips-row { justify-content: center; padding: 0; }
 
 .chips-row {
   display: flex;

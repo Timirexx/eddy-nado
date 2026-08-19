@@ -11,7 +11,7 @@ export default function TopBar({ title, subtitle }) {
       <div className="topbar-actions">
         <span className="grounding-pill">
           <GroundingIcon />
-          Grounded in Nado docs + live account data
+          Grounded in Nado's documentation
         </span>
         <ConnectButton.Custom>
           {({ account, chain, openConnectModal, openAccountModal, openChainModal, mounted }) => {
