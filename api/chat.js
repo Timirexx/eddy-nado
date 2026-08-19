@@ -92,19 +92,20 @@ export default async function handler(req, res) {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Use POST.' });
   }
+  // The outermost guard, ahead of the config check and body parsing: a flood
+  // has to be throttled whether or not the endpoint is correctly configured,
+  // and oversized payloads should be rejected before they are parsed.
+  const limit = await checkRateLimit(req);
+  if (!limit.allowed) {
+    res.setHeader('Retry-After', String(limit.retryAfter));
+    return res.status(429).json({ error: limit.reason, retryAfter: limit.retryAfter });
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return res.status(500).json({
       error:
         'The assistant is not configured: ANTHROPIC_API_KEY is missing. Add it in the Vercel project settings and redeploy.',
     });
-  }
-
-  // Checked before parsing the body so a flood of oversized payloads is
-  // rejected cheaply, and before any billable model call.
-  const limit = await checkRateLimit(req);
-  if (!limit.allowed) {
-    res.setHeader('Retry-After', String(limit.retryAfter));
-    return res.status(429).json({ error: limit.reason, retryAfter: limit.retryAfter });
   }
 
   let messages;
