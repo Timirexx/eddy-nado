@@ -19,5 +19,9 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
     "vite": "^5.4.11"
+  },
+  "overridesComment": "RainbowKit renders QR codes through cuer, which calls the qr package with border:0. cuer declares a loose 'qr':'~0' range, and qr@0.6.0 started rejecting border<=0 — so the QR screen throws 'invalid border=0' and white-screens the app. Pin below that until cuer tightens its range.",
+  "overrides": {
+    "qr": "0.5.5"
   }
 }
