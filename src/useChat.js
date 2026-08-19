@@ -63,9 +63,12 @@ export function useChat() {
         });
 
         if (!res.ok) {
-          // Validation and configuration failures come back as JSON before the
-          // stream opens.
+          // Validation, rate-limit, and configuration failures come back as
+          // JSON before the stream opens.
           const body = await res.json().catch(() => ({}));
+          if (res.status === 429 && body.retryAfter) {
+            throw new Error(`${body.error} (about ${formatWait(body.retryAfter)} to wait.)`);
+          }
           throw new Error(body.error || `Request failed (${res.status}).`);
         }
         if (!res.body) throw new Error('Streaming is not supported by this browser.');
@@ -110,6 +113,12 @@ export function useChat() {
   );
 
   return { messages, status, error, send, stop, reset, isStreaming: status === 'streaming' };
+}
+
+function formatWait(seconds) {
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.ceil(seconds / 60);
+  return minutes === 1 ? 'a minute' : `${minutes} minutes`;
 }
 
 /**

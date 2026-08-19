@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { buildSystemPrompt } from './_system-prompt.js';
+import { checkRateLimit } from './_rate-limit.js';
 
 const MODEL = 'claude-opus-5';
 
@@ -96,6 +97,14 @@ export default async function handler(req, res) {
       error:
         'The assistant is not configured: ANTHROPIC_API_KEY is missing. Add it in the Vercel project settings and redeploy.',
     });
+  }
+
+  // Checked before parsing the body so a flood of oversized payloads is
+  // rejected cheaply, and before any billable model call.
+  const limit = await checkRateLimit(req);
+  if (!limit.allowed) {
+    res.setHeader('Retry-After', String(limit.retryAfter));
+    return res.status(429).json({ error: limit.reason, retryAfter: limit.retryAfter });
   }
 
   let messages;

@@ -72,6 +72,6 @@ It regenerates `api/_nado-knowledge.js` and stamps the retrieval date, which Edd
 ## Known gaps
 
 - **No live market or account data.** Eddy reads the docs and whatever the user tells it; it cannot see prices, funding, or balances. Connecting Nado's indexer would let it answer "am I near liquidation?" with real numbers.
-- **No rate limiting.** `/api/chat` is public and every call costs tokens. Before this sees real traffic it needs a per-IP or per-wallet limit backed by a store such as Vercel KV.
+- **Rate limiting counts per instance by default.** `/api/chat` is limited per IP with an optional global daily cap, but without a shared store each serverless instance keeps its own counter, so the real limit is looser than configured. Create a KV store in the Vercel dashboard — `KV_REST_API_URL` and `KV_REST_API_TOKEN` are injected automatically and the limiter picks them up with no code change.
 - **The sidebar account panel is sample data**, shown once a wallet connects. It is not wired to Nado.
 - **Conversations are not persisted** — a reload clears the thread.
