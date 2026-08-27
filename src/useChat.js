@@ -4,17 +4,43 @@ import { useCallback, useRef, useState } from 'react';
  * Drives the conversation against /api/chat.
  *
  * Messages are held in the shape the API expects ({role, text, images}) plus a
- * little local-only state, so sending is just a filter-and-post rather than a
+ * little local-only state, so sending is a filter-and-post rather than a
  * translation step that can drift from the server's contract.
+ *
+ * A ref mirrors the message list and is the source of truth for anything read
+ * outside of render. React does not run setState updater callbacks
+ * synchronously — they run during the next render — so reading the current
+ * history out of one produces an empty array at call time. The ref is written
+ * and read synchronously, which is what the request builder and the streaming
+ * callbacks both need.
  */
 export function useChat() {
   const [messages, setMessages] = useState([]);
   const [status, setStatus] = useState('idle'); // idle | streaming | error
   const [error, setError] = useState(null);
+
+  const messagesRef = useRef([]);
   const abortRef = useRef(null);
   const idRef = useRef(0);
 
   const nextId = () => `m${++idRef.current}`;
+
+  // Single write path, so the ref and the rendered state can never disagree.
+  const commit = useCallback((next) => {
+    messagesRef.current = next;
+    setMessages(next);
+  }, []);
+
+  const patch = useCallback(
+    (id, changes) => {
+      commit(
+        messagesRef.current.map((m) =>
+          m.id === id ? { ...m, ...(typeof changes === 'function' ? changes(m) : changes) } : m,
+        ),
+      );
+    },
+    [commit],
+  );
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
@@ -25,14 +51,14 @@ export function useChat() {
   const reset = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
-    setMessages([]);
+    commit([]);
     setError(null);
     setStatus('idle');
-  }, []);
+  }, [commit]);
 
   const send = useCallback(
     async (text, images = []) => {
-      const trimmed = text.trim();
+      const trimmed = (text ?? '').trim();
       if ((!trimmed && images.length === 0) || abortRef.current) return;
 
       setError(null);
@@ -40,13 +66,11 @@ export function useChat() {
       const userMessage = { id: nextId(), role: 'user', text: trimmed, images };
       const assistantId = nextId();
 
-      // Snapshot the history the request will send. Reading `messages` inside
-      // the async body below would capture a stale closure and drop turns.
-      let history = [];
-      setMessages((prev) => {
-        history = [...prev, userMessage];
-        return [...history, { id: assistantId, role: 'assistant', text: '', images: [], pending: true }];
-      });
+      const history = [...messagesRef.current, userMessage];
+      commit([
+        ...history,
+        { id: assistantId, role: 'assistant', text: '', images: [], pending: true },
+      ]);
 
       const controller = new AbortController();
       abortRef.current = controller;
@@ -75,30 +99,20 @@ export function useChat() {
 
         await readEventStream(res.body, (event, data) => {
           if (event === 'delta') {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantId ? { ...m, text: m.text + data.text, pending: false } : m,
-              ),
-            );
+            patch(assistantId, (m) => ({ text: m.text + data.text, pending: false }));
           } else if (event === 'error') {
             setError(data.message);
           } else if (event === 'truncated') {
-            setMessages((prev) =>
-              prev.map((m) => (m.id === assistantId ? { ...m, truncated: true } : m)),
-            );
+            patch(assistantId, { truncated: true });
           }
         });
 
-        // A refusal or an early failure can close the stream with nothing
-        // written; an empty bubble left behind reads as a silent hang.
-        setMessages((prev) =>
-          prev.filter((m) => m.id !== assistantId || m.text.trim().length > 0),
-        );
+        // A refusal or an early failure can close the stream having written
+        // nothing; an empty bubble left behind reads as a silent hang.
+        dropIfEmpty(assistantId);
         setStatus('idle');
       } catch (err) {
-        setMessages((prev) =>
-          prev.filter((m) => m.id !== assistantId || m.text.trim().length > 0),
-        );
+        dropIfEmpty(assistantId);
         if (err.name === 'AbortError') {
           setStatus('idle');
         } else {
@@ -108,8 +122,12 @@ export function useChat() {
       } finally {
         abortRef.current = null;
       }
+
+      function dropIfEmpty(id) {
+        commit(messagesRef.current.filter((m) => m.id !== id || m.text.trim().length > 0));
+      }
     },
-    [],
+    [commit, patch],
   );
 
   return { messages, status, error, send, stop, reset, isStreaming: status === 'streaming' };
