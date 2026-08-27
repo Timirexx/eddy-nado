@@ -1,4 +1,5 @@
 import { useAccount } from 'wagmi';
+import HistoryList from './HistoryList.jsx';
 import {
   EddyMark,
   ChatIcon,
@@ -19,7 +20,17 @@ function truncateAddress(address) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
-export default function Sidebar({ account, activeNav, onNavChange, onNewChat }) {
+export default function Sidebar({
+  account,
+  activeNav,
+  onNavChange,
+  onNewChat,
+  conversations,
+  activeConversationId,
+  onSelectConversation,
+  onDeleteConversation,
+  storageWarning,
+}) {
   const { address, isConnected, chain } = useAccount();
 
   return (
@@ -50,6 +61,24 @@ export default function Sidebar({ account, activeNav, onNavChange, onNewChat }) 
           </button>
         ))}
       </nav>
+
+      {activeNav === 'history' && (
+        <div className="history-panel">
+          <div className="sidebar-label">
+            Chat history
+            {conversations.length > 0 && (
+              <span className="history-count">{conversations.length}</span>
+            )}
+          </div>
+          {storageWarning && <div className="history-warning">{storageWarning}</div>}
+          <HistoryList
+            conversations={conversations}
+            activeId={activeConversationId}
+            onSelect={onSelectConversation}
+            onDelete={onDeleteConversation}
+          />
+        </div>
+      )}
 
       <div className="sidebar-label">Your account</div>
 

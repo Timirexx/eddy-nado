@@ -36,6 +36,15 @@ function Bubble({ message }) {
           </div>
         )}
 
+        {/* Images are dropped from stored history when localStorage fills up.
+            Saying so beats a message that silently lost its chart. */}
+        {!message.images?.length && message.shedImageCount > 0 && (
+          <div className="msg-note">
+            {message.shedImageCount === 1 ? 'Image was' : `${message.shedImageCount} images were`}{' '}
+            cleared to free up storage.
+          </div>
+        )}
+
         {(message.text || message.pending) && (
           <div className="bubble">
             {message.pending && !message.text ? (

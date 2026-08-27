@@ -97,6 +97,25 @@ export function WalletIcon() {
   );
 }
 
+export function TrashIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none">
+      <path d="M3 4.5h10M6.4 4.5V3.2h3.2v1.3M4.4 4.5l.6 8.2h6l.6-8.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6.8 7v3.4M9.2 7v3.4" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function ImageIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none">
+      <rect x="2.4" y="3.4" width="11.2" height="9.2" rx="1.6" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="5.9" cy="6.5" r="1" stroke="currentColor" strokeWidth="1" />
+      <path d="M3.2 11 6 8.5l2.2 1.9 1.9-1.5 2.7 2.3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function StopIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none">

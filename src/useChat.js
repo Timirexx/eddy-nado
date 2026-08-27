@@ -14,8 +14,12 @@ import { useCallback, useRef, useState } from 'react';
  * and read synchronously, which is what the request builder and the streaming
  * callbacks both need.
  */
-export function useChat() {
+export function useChat(initialThreadId) {
   const [messages, setMessages] = useState([]);
+  // Which conversation the messages on screen belong to. Updated in the same
+  // batch as the messages themselves, so a persistence layer reading the pair
+  // can never see a new id next to the previous conversation's messages.
+  const [threadId, setThreadId] = useState(initialThreadId);
   const [status, setStatus] = useState('idle'); // idle | streaming | error
   const [error, setError] = useState(null);
 
@@ -48,13 +52,37 @@ export function useChat() {
     setStatus('idle');
   }, []);
 
-  const reset = useCallback(() => {
-    abortRef.current?.abort();
-    abortRef.current = null;
-    commit([]);
-    setError(null);
-    setStatus('idle');
-  }, [commit]);
+  const reset = useCallback(
+    (newThreadId) => {
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setError(null);
+      setStatus('idle');
+      setThreadId(newThreadId);
+      commit([]);
+    },
+    [commit],
+  );
+
+  /**
+   * Replaces the thread with a stored conversation. Any in-flight stream is
+   * aborted first, so a reply that was still arriving for the previous
+   * conversation cannot append itself onto the one just opened.
+   *
+   * The id and the messages are set in one batch — that pairing is what makes
+   * persistence safe.
+   */
+  const hydrate = useCallback(
+    (id, storedMessages) => {
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setError(null);
+      setStatus('idle');
+      setThreadId(id);
+      commit(storedMessages.map((m) => ({ ...m, pending: false })));
+    },
+    [commit],
+  );
 
   const send = useCallback(
     async (text, images = []) => {
@@ -130,7 +158,17 @@ export function useChat() {
     [commit, patch],
   );
 
-  return { messages, status, error, send, stop, reset, isStreaming: status === 'streaming' };
+  return {
+    messages,
+    threadId,
+    status,
+    error,
+    send,
+    stop,
+    reset,
+    hydrate,
+    isStreaming: status === 'streaming',
+  };
 }
 
 function formatWait(seconds) {
