@@ -911,7 +911,207 @@ nav.primary-nav { display: flex; flex-direction: column; gap: 2px; }
 ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 100px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
+/* ---------- Mobile chrome (hidden on desktop) ----------
+   Declared here so the desktop cascade explicitly excludes them; the phone
+   layout below is purely additive and never alters desktop rules. */
+.mobile-header,
+.mobile-scrim,
+.drawer-close { display: none; }
+
+/* ============================================================
+   PHONE LAYOUT
+   Rearranged rather than scaled down. Everything is scoped to this
+   breakpoint, so the desktop design above is untouched.
+   ============================================================ */
 @media (max-width: 720px) {
-  .app { grid-template-columns: 1fr; }
-  .sidebar { display: none; }
+  /* dvh tracks the viewport as mobile browser chrome hides and shows; 100vh
+     is the taller "address bar collapsed" height, so it puts the composer
+     under the browser UI on first paint. vh first as the fallback. */
+  .app {
+    grid-template-columns: 1fr;
+    /* Explicit rows are required: .app is a grid, so without them the header
+       lands in an implicit row that stretches to share the height with the
+       thread — it rendered 265px tall instead of its content height. */
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0;
+    padding: 0;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  /* ---- Header ---- */
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    padding-top: max(8px, env(safe-area-inset-top));
+    background: var(--glass-bg-strong);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+    z-index: 30;
+  }
+  .mobile-brand { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+  .mobile-brand-mark { width: 26px; height: 26px; flex-shrink: 0; }
+  .mobile-brand-name { font-family: var(--font-display); font-size: 19px; }
+
+  .mobile-header-actions { display: flex; align-items: center; gap: 6px; }
+
+  /* 44px is the minimum comfortable tap target; the icon inside stays small. */
+  .mobile-icon-btn {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 11px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mobile-icon-btn svg { width: 19px; height: 19px; }
+  .mobile-icon-btn:active { background: var(--glass-bg); color: var(--text); }
+  .mobile-badge {
+    position: absolute;
+    top: 5px; right: 5px;
+    min-width: 15px; height: 15px;
+    padding: 0 4px;
+    border-radius: 100px;
+    background: var(--accent);
+    color: var(--accent-on);
+    font-size: 9.5px;
+    font-weight: 700;
+    line-height: 15px;
+    text-align: center;
+  }
+
+  /* The desktop top bar duplicates the mobile header; the grounding pill and
+     subtitle are what forced it to 96px and three wrapped lines. */
+  .topbar { display: none; }
+
+  /* ---- Sidebar as a drawer ----
+     Same component and same markup as desktop, so every feature it carries —
+     New Chat, History, delete, the account panel — works identically here.
+     The old rule display:none removed all of it on phones. */
+  .sidebar {
+    position: fixed;
+    top: 0; bottom: 0; left: 0;
+    width: min(86vw, 330px);
+    z-index: 50;
+    border-radius: 0;
+    border-right: 1px solid var(--glass-border);
+    padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+    padding-top: max(14px, env(safe-area-inset-top));
+    transform: translateX(-100%);
+    transition: transform 280ms cubic-bezier(.32, .72, 0, 1);
+    overscroll-behavior: contain;
+  }
+  .app.menu-open .sidebar { transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar { transition: none; }
+  }
+
+  .mobile-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    border: none;
+    padding: 0;
+    background: rgba(3, 5, 9, 0.62);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    animation: scrim-in 200ms ease;
+  }
+  @keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
+
+  .brand { position: relative; padding-right: 46px; }
+  .drawer-close {
+    display: flex;
+    position: absolute;
+    top: -4px; right: -6px;
+    width: 44px; height: 44px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .drawer-close svg { width: 15px; height: 15px; }
+
+  /* Roomier rows in the drawer — desktop density is hard to hit with a thumb. */
+  .nav-item { padding: 12px 12px; font-size: 14.5px; }
+  .new-chat { padding: 13px 12px; font-size: 14.5px; }
+  .history-list { max-height: none; }
+  .history-open { padding: 11px 6px 11px 11px; }
+  .history-title { font-size: 13.5px; }
+  .history-delete { width: 40px; opacity: 1; }
+
+  /* ---- Thread ---- */
+  .thread { padding: 6px 0; }
+  .thread-inner { padding: 0 14px; gap: 18px; }
+  .msg-body { max-width: 88%; }
+  .bubble { font-size: 15px; padding: 12px 14px; }
+  .msg-image { max-width: 68vw; max-height: 240px; }
+  .markdown table { font-size: 12.5px; }
+
+  /* ---- Empty state ---- */
+  .empty-state { padding: 26px 0 8px; gap: 8px; }
+  .empty-mark { width: 38px; height: 38px; }
+  .empty-title { font-size: 25px; }
+  .empty-sub { font-size: 13.5px; padding: 0 6px; }
+
+  /* Chips scroll horizontally instead of wrapping into five ragged rows,
+     which is what pushed the composer off-screen. */
+  .empty-state .chips-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding: 2px 14px 6px;
+    scroll-padding: 14px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .empty-state .chips-row::-webkit-scrollbar { display: none; }
+  .chip { padding: 12px 16px; font-size: 13.5px; flex-shrink: 0; min-height: 44px; }
+
+  /* The wallet control is the one header item that stays text, so it needs its
+     own bump — at desktop padding it lands at 33px. */
+  .wallet-btn { min-height: 44px; padding: 10px 14px; font-size: 13px; }
+
+  /* ---- Composer ---- */
+  .composer-wrap { padding: 0 12px calc(6px + env(safe-area-inset-bottom)); }
+  .composer { padding: 6px 6px 6px 10px; border-radius: 16px; gap: 6px; }
+  /* 16px exactly: iOS Safari zooms the page when a focused input is smaller,
+     which leaves the layout offset after the keyboard closes. */
+  .composer textarea {
+    font-size: 16px;
+    padding: 11px 0;
+    min-height: 44px;
+  }
+  .attach-btn { width: 44px; height: 44px; margin-bottom: 0; align-self: center; }
+  .attach-btn svg { width: 19px; height: 19px; }
+  .send-btn { width: 44px; height: 44px; align-self: center; }
+  .send-btn svg { width: 18px; height: 18px; }
+  .attachment img { width: 56px; height: 56px; }
+  .attachment-remove { width: 24px; height: 24px; top: -7px; right: -7px; }
+
+  .disclaimer { font-size: 10.5px; padding: 4px 16px 6px; line-height: 1.45; }
+  .thread-error { max-width: 100%; }
+}
+
+/* Very small phones (iPhone SE and similar) — trim the largest type only. */
+@media (max-width: 380px) {
+  .empty-title { font-size: 22px; }
+  .mobile-brand-name { font-size: 17.5px; }
+  .chip { padding: 10px 13px; font-size: 13px; }
 }

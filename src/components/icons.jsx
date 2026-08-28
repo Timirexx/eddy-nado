@@ -97,6 +97,14 @@ export function WalletIcon() {
   );
 }
 
+export function MenuIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none">
+      <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function TrashIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none">

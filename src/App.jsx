@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Sidebar from './components/Sidebar.jsx';
 import TopBar from './components/TopBar.jsx';
+import MobileHeader from './components/MobileHeader.jsx';
 import MessageThread from './components/MessageThread.jsx';
 import ChipsRow from './components/ChipsRow.jsx';
 import Composer from './components/Composer.jsx';
@@ -25,6 +26,7 @@ function EmptyState({ onPick, disabled }) {
 export default function App() {
   const [input, setInput] = useState('');
   const [activeNav, setActiveNav] = useState('chat');
+  const [menuOpen, setMenuOpen] = useState(false);
   const {
     conversations,
     activeId,
@@ -52,6 +54,20 @@ export default function App() {
     syncMessages(threadId, messages.filter((m) => !m.pending || m.text));
   }, [messages, threadId, syncMessages]);
 
+  // Escape closes the drawer, and body scroll is locked while it is open so
+  // the page behind cannot scroll under the overlay on touch.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e) => e.key === 'Escape' && setMenuOpen(false);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
+
   function handleSend(text, images) {
     send(text ?? input, images ?? []);
     setInput('');
@@ -60,9 +76,11 @@ export default function App() {
   function handleNewChat() {
     setInput('');
     reset(startNew());
+    setMenuOpen(false);
   }
 
   function handleSelectConversation(id) {
+    setMenuOpen(false);
     if (id === activeId) return;
     setInput('');
     select(id);
@@ -71,12 +89,28 @@ export default function App() {
   return (
     <>
       <div className="atmosphere" aria-hidden="true" />
-      <div className="app">
+      <div className={`app${menuOpen ? ' menu-open' : ''}`}>
+        <MobileHeader
+          onOpenMenu={() => setMenuOpen(true)}
+          onNewChat={handleNewChat}
+          historyCount={conversations.length}
+        />
+        {/* Only rendered while open, so it can never swallow taps on desktop
+            or sit in the tab order when hidden. */}
+        {menuOpen && (
+          <button
+            type="button"
+            className="mobile-scrim"
+            aria-label="Close menu"
+            onClick={() => setMenuOpen(false)}
+          />
+        )}
         <Sidebar
           account={account}
           activeNav={activeNav}
           onNavChange={setActiveNav}
           onNewChat={handleNewChat}
+          onCloseMenu={() => setMenuOpen(false)}
           conversations={conversations}
           activeConversationId={activeId}
           onSelectConversation={handleSelectConversation}

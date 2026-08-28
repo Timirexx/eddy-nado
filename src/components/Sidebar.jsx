@@ -7,6 +7,7 @@ import {
   WatchingIcon,
   SettingsIcon,
   NewChatIcon,
+  CloseIcon,
 } from './icons.jsx';
 
 const NAV_ITEMS = [
@@ -30,6 +31,7 @@ export default function Sidebar({
   onSelectConversation,
   onDeleteConversation,
   storageWarning,
+  onCloseMenu,
 }) {
   const { address, isConnected, chain } = useAccount();
 
@@ -41,6 +43,16 @@ export default function Sidebar({
           <div className="brand-name">Eddy</div>
           <div className="brand-tag">Copilot for Nado</div>
         </div>
+        {/* Phone-only: the drawer needs a close affordance inside itself, since
+            the scrim alone isn't discoverable. Hidden on desktop. */}
+        <button
+          type="button"
+          className="drawer-close"
+          onClick={onCloseMenu}
+          aria-label="Close menu"
+        >
+          <CloseIcon />
+        </button>
       </div>
 
       <button className="new-chat" type="button" onClick={onNewChat}>
