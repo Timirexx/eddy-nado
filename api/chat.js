@@ -140,11 +140,23 @@ export default async function handler(req, res) {
   };
 
   try {
+    // Language preference travels as a separate system block, appended after
+    // the cached one. Interpolating it into the main prompt would change the
+    // cached prefix per language and drop the cache hit rate to zero.
+    const system = buildSystemPrompt();
+    const language = typeof req.body?.language === 'string' ? req.body.language.slice(0, 60) : null;
+    if (language && language !== 'English') {
+      system.push({
+        type: 'text',
+        text: `Reply in ${language}. Keep protocol terms, ticker symbols and product names (Nado, Ink, USDT0, BTC-PERP, unified margin) in their standard form rather than translating them, since that is how they appear in the interface and the docs. If the user writes to you in a different language, follow the user's language instead — what they typed is a stronger signal than this setting.`,
+      });
+    }
+
     const stream = client.messages.stream({
       model: MODEL,
       max_tokens: MAX_TOKENS,
       output_config: { effort: EFFORT },
-      system: buildSystemPrompt(),
+      system,
       messages,
     });
 

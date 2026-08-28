@@ -20,7 +20,7 @@ import { useCallback, useRef, useState } from 'react';
  *                         activity. Null when no wallet is connected, in which
  *                         case nothing is attributed.
  */
-export function useChat(initialThreadId, address = null) {
+export function useChat(initialThreadId, address = null, language = null) {
   const [messages, setMessages] = useState([]);
   // Which conversation the messages on screen belong to. Updated in the same
   // batch as the messages themselves, so a persistence layer reading the pair
@@ -118,6 +118,7 @@ export function useChat(initialThreadId, address = null) {
           body: JSON.stringify({
             messages: history.map((m) => ({ role: m.role, text: m.text, images: m.images })),
             address,
+            language,
             // Only the opening message of a thread counts as a new conversation.
             isFirstMessage: history.length === 1,
           }),
@@ -167,7 +168,7 @@ export function useChat(initialThreadId, address = null) {
     // `address` matters: without it the callback captures whatever wallet
     // state existed at mount, so connecting mid-session would keep posting the
     // stale value and the user would never be credited.
-    [commit, patch, address],
+    [commit, patch, address, language],
   );
 
   return {

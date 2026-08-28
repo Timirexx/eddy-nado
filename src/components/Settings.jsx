@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useAccount, useDisconnect } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useTheme } from '../useTheme.js';
+import { useI18n, LOCALES } from '../i18n/index.jsx';
 import {
   libraryStats,
   storageUsage,
@@ -77,6 +78,7 @@ export default function Settings({ onOpenLibrary }) {
   const { disconnect } = useDisconnect();
   const { openConnectModal } = useConnectModal();
   const { theme, setTheme } = useTheme();
+  const { t, code, setLocale } = useI18n();
 
   // Re-read on demand so figures update after clearing or exporting rather
   // than showing a stale snapshot from mount.
@@ -118,13 +120,13 @@ export default function Settings({ onOpenLibrary }) {
       <header className="set-header">
         <SettingsIcon />
         <div>
-          <h2>Settings</h2>
+          <h2>{t('settings.title')}</h2>
           <p>Your profile, how Eddy looks and behaves, and where to get help.</p>
         </div>
       </header>
 
       {/* ---------------- Profile ---------------- */}
-      <Section title="Profile">
+      <Section title={t('settings.profile')}>
         {isConnected && address ? (
           <>
             <div className="set-row">
@@ -155,7 +157,7 @@ export default function Settings({ onOpenLibrary }) {
 
         <Row
           icon={HistoryIcon}
-          label="Library"
+          label={t('settings.library')}
           description={
             library.conversations === 0
               ? 'No saved conversations yet'
@@ -166,20 +168,20 @@ export default function Settings({ onOpenLibrary }) {
       </Section>
 
       {/* ---------------- Personalization ---------------- */}
-      <Section title="Personalization">
+      <Section title={t('settings.personalization')}>
         <div className="set-row">
           <span className="set-row-icon">
             <SparkIcon />
           </span>
           <span className="set-row-body">
-            <span className="set-row-label">Theme</span>
+            <span className="set-row-label">{t('settings.theme')}</span>
             <span className="set-row-desc">System follows your device setting</span>
           </span>
           <div className="set-segmented" role="radiogroup" aria-label="Theme">
             {[
-              { key: 'light', label: 'Light' },
-              { key: 'dark', label: 'Dark' },
-              { key: 'system', label: 'System' },
+              { key: 'light', label: t('settings.light') },
+              { key: 'dark', label: t('settings.dark') },
+              { key: 'system', label: t('settings.system') },
             ].map((opt) => (
               <button
                 key={opt.key}
@@ -200,19 +202,29 @@ export default function Settings({ onOpenLibrary }) {
             <DocsIcon />
           </span>
           <span className="set-row-body">
-            <span className="set-row-label">App language</span>
-            <span className="set-row-desc">
-              English only for now — Eddy still answers in whatever language you write in
-            </span>
+            <span className="set-row-label">{t('settings.language')}</span>
+            <span className="set-row-desc">{t('settings.languageDesc')}</span>
           </span>
-          <select className="set-select" value="en" disabled aria-label="App language">
-            <option value="en">English</option>
+          {/* Native names, because people scan for their language written the
+              way they write it rather than the English exonym. */}
+          <select
+            className="set-select"
+            value={code}
+            onChange={(e) => setLocale(e.target.value)}
+            aria-label={t('settings.language')}
+          >
+            {LOCALES.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.flag}  {l.native}
+                {l.native !== l.name ? ` — ${l.name}` : ''}
+              </option>
+            ))}
           </select>
         </div>
 
         <div className="set-row set-storage">
           <span className="set-row-body">
-            <span className="set-row-label">Storage</span>
+            <span className="set-row-label">{t('settings.storage')}</span>
             <span className="set-row-desc">
               {usage.available
                 ? `${formatBytes(usage.totalBytes)} of about ${formatBytes(usage.quota)} used on this device`
@@ -278,7 +290,7 @@ export default function Settings({ onOpenLibrary }) {
       </Section>
 
       {/* ---------------- Support ---------------- */}
-      <Section title="Support">
+      <Section title={t('settings.support')}>
         <Row
           icon={CloseIcon}
           label="Report an app issue"
@@ -298,7 +310,7 @@ export default function Settings({ onOpenLibrary }) {
         />
       </Section>
 
-      <Section title="About">
+      <Section title={t('settings.about')}>
         <Row label="Version" value={APP_VERSION} />
         <Row label="Assistant model" value="Claude Opus 5" />
         <Row label="Network" value="Ink · chain 57073" />

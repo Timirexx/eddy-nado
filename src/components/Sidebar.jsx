@@ -1,4 +1,5 @@
 import { useAccount } from 'wagmi';
+import { useI18n } from '../i18n/index.jsx';
 import HistoryList from './HistoryList.jsx';
 import {
   EddyMark,
@@ -12,11 +13,11 @@ import {
 } from './icons.jsx';
 
 const NAV_ITEMS = [
-  { key: 'chat', label: 'Chat', icon: ChatIcon },
-  { key: 'history', label: 'History', icon: HistoryIcon },
-  { key: 'leaderboard', label: 'Leaderboard', icon: TrophyIcon },
-  { key: 'watching', label: 'Watching', icon: WatchingIcon },
-  { key: 'settings', label: 'Settings', icon: SettingsIcon },
+  { key: 'chat', labelKey: 'nav.chat', icon: ChatIcon },
+  { key: 'history', labelKey: 'nav.history', icon: HistoryIcon },
+  { key: 'leaderboard', labelKey: 'nav.leaderboard', icon: TrophyIcon },
+  { key: 'watching', labelKey: 'nav.watching', icon: WatchingIcon },
+  { key: 'settings', labelKey: 'nav.settings', icon: SettingsIcon },
 ];
 
 function truncateAddress(address) {
@@ -36,6 +37,7 @@ export default function Sidebar({
   onCloseMenu,
 }) {
   const { address, isConnected, chain } = useAccount();
+  const { t } = useI18n();
 
   return (
     <aside className="sidebar">
@@ -59,11 +61,11 @@ export default function Sidebar({
 
       <button className="new-chat" type="button" onClick={onNewChat}>
         <NewChatIcon />
-        New chat
+        {t('action.newChat')}
       </button>
 
       <nav className="primary-nav" aria-label="Primary">
-        {NAV_ITEMS.map(({ key, label, icon: ItemIcon }) => (
+        {NAV_ITEMS.map(({ key, labelKey, icon: ItemIcon }) => (
           <button
             key={key}
             type="button"
@@ -71,7 +73,7 @@ export default function Sidebar({
             onClick={() => onNavChange(key)}
           >
             <ItemIcon />
-            {label}
+            {t(labelKey)}
           </button>
         ))}
       </nav>

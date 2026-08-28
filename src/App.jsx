@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
+import { useI18n } from './i18n/index.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import TopBar from './components/TopBar.jsx';
 import MobileHeader from './components/MobileHeader.jsx';
@@ -14,13 +15,12 @@ import { useConversations } from './useConversations.js';
 import { account, chips } from './data/conversation.js';
 
 function EmptyState({ onPick, disabled }) {
+  const { t } = useI18n();
   return (
     <div className="empty-state">
       <EddyMark className="empty-mark" />
-      <h1 className="empty-title">Ask Eddy anything about Nado</h1>
-      <p className="empty-sub">
-        How the platform works, trading concepts, market structure, or a chart you paste in.
-      </p>
+      <h1 className="empty-title">{t('empty.title')}</h1>
+      <p className="empty-sub">{t('empty.subtitle')}</p>
       <ChipsRow chips={chips} onPick={onPick} disabled={disabled} />
     </div>
   );
@@ -45,8 +45,10 @@ export default function App() {
   // wallet the request carries no address and nothing is attributed.
   const { address } = useAccount();
 
+  const { locale, t } = useI18n();
+
   const { messages, threadId, error, send, stop, reset, hydrate, isStreaming } =
-    useChat(activeId, address ?? null);
+    useChat(activeId, address ?? null, locale.promptName);
 
   // Opening a conversation from history: load its messages into the thread.
   // threadId comes from useChat and always travels with the messages, so the
@@ -158,10 +160,7 @@ export default function App() {
                 onStop={stop}
                 isStreaming={isStreaming}
               />
-              <div className="disclaimer">
-                Eddy explains Nado and trading concepts. It has no market data or account access,
-                and doesn't give financial advice.
-              </div>
+              <div className="disclaimer">{t('disclaimer')}</div>
             </>
           )}
         </div>

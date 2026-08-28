@@ -7,6 +7,7 @@ import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { ink } from 'wagmi/chains';
 import App from './App.jsx';
 import { applyStoredThemeEarly } from './useTheme.js';
+import { I18nProvider, applyStoredLocaleEarly } from './i18n/index.jsx';
 import LandingPage from './landing/LandingPage.jsx';
 import './styles.css';
 import { config } from './wagmi.js';
@@ -14,6 +15,9 @@ import { config } from './wagmi.js';
 // Before the first paint: a stored light preference would otherwise flash the
 // dark palette for a frame while React mounts.
 applyStoredThemeEarly();
+// Same reasoning for direction: an RTL user would otherwise see one frame of
+// left-to-right layout before React mounts.
+applyStoredLocaleEarly();
 
 const queryClient = new QueryClient();
 
@@ -59,7 +63,9 @@ createRoot(document.getElementById('root')).render(
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={rainbowTheme} initialChain={ink}>
-          <Root />
+          <I18nProvider>
+            <Root />
+          </I18nProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
