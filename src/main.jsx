@@ -6,9 +6,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { ink } from 'wagmi/chains';
 import App from './App.jsx';
+import { applyStoredThemeEarly } from './useTheme.js';
 import LandingPage from './landing/LandingPage.jsx';
 import './styles.css';
 import { config } from './wagmi.js';
+
+// Before the first paint: a stored light preference would otherwise flash the
+// dark palette for a frame while React mounts.
+applyStoredThemeEarly();
 
 const queryClient = new QueryClient();
 
