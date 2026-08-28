@@ -1,0 +1,331 @@
+/**
+ * Landing page. Reuses the app's design tokens (--accent, --glass-*, --text-*)
+ * so the marketing surface and the product read as one thing.
+ *
+ * Committed to the dark treatment in the reference render rather than following
+ * the viewer's theme: the robot's glow and the podium only work on a dark
+ * ground, so every colour here is set explicitly instead of inherited.
+ */
+
+.landing {
+  --lp-bg: #05070d;
+  --lp-surface: rgba(255, 255, 255, 0.035);
+  --lp-border: rgba(255, 255, 255, 0.09);
+  --lp-text: #eef1f6;
+  --lp-muted: #99a2b2;
+  --lp-faint: #6b7486;
+
+  position: relative;
+  min-height: 100vh;
+  background: var(--lp-bg);
+  color: var(--lp-text);
+  overflow-x: hidden;
+}
+
+.landing-atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(880px 620px at 74% 34%, rgba(240, 169, 62, 0.2), transparent 68%),
+    radial-gradient(720px 560px at 12% 8%, rgba(48, 92, 138, 0.26), transparent 70%),
+    radial-gradient(900px 700px at 50% 108%, rgba(240, 169, 62, 0.09), transparent 66%),
+    var(--lp-bg);
+}
+
+.landing > *:not(.landing-atmosphere) { position: relative; z-index: 1; }
+
+/* ---------- Nav ---------- */
+.landing-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 22px 28px;
+}
+.landing-brand { display: flex; align-items: center; gap: 11px; text-decoration: none; color: inherit; }
+.landing-brand-mark { width: 38px; height: 38px; }
+.landing-brand-name {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 25px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+.landing-brand-tag {
+  display: block;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.17em;
+  color: var(--lp-faint);
+  margin-top: 4px;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 600;
+  border-radius: 100px;
+  padding: 13px 24px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 180ms cubic-bezier(.22,.85,.32,1.2), box-shadow 180ms ease,
+    background 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+.btn-glyph { width: 15px; height: 15px; }
+.btn-sm { padding: 10px 18px; font-size: 13.5px; }
+
+.btn-primary { background: var(--accent); color: #14100a; box-shadow: 0 10px 30px rgba(240, 169, 62, 0.26); }
+.btn-primary:hover { background: var(--accent-strong); transform: translateY(-2px); box-shadow: 0 16px 40px rgba(240, 169, 62, 0.36); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-ghost { background: var(--lp-surface); color: var(--lp-text); border-color: var(--lp-border); }
+.btn-ghost:hover { border-color: rgba(240, 169, 62, 0.6); color: var(--accent); transform: translateY(-2px); }
+
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* ---------- Hero ---------- */
+.landing-hero {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 26px 28px 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr);
+  align-items: center;
+  gap: 32px;
+  min-height: min(74vh, 640px);
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(240, 169, 62, 0.1);
+  border: 1px solid rgba(240, 169, 62, 0.3);
+  border-radius: 100px;
+  padding: 8px 15px;
+}
+.hero-badge svg { width: 13px; height: 13px; }
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(38px, 5.6vw, 66px);
+  line-height: 1.04;
+  font-weight: 400;
+  letter-spacing: -0.022em;
+  margin: 20px 0 0;
+  text-wrap: balance;
+}
+.hero-accent { color: var(--accent); }
+
+.hero-sub {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--lp-muted);
+  max-width: 44ch;
+  margin: 20px 0 0;
+}
+
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+.hero-note { font-size: 12.5px; color: var(--lp-faint); margin: 16px 0 0; }
+
+/* ---------- Robot ---------- */
+.hero-robot { display: flex; justify-content: center; align-items: center; }
+
+.eddy-stage {
+  position: relative;
+  width: min(100%, 430px);
+  /* The rig turns in 3D; without perspective the rotations flatten into skew. */
+  perspective: 1100px;
+  perspective-origin: 50% 42%;
+}
+
+.eddy-glow {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 78%;
+  aspect-ratio: 1;
+  transform: translate(calc(-50% + var(--glow-tx, 0px)), -50%);
+  background: radial-gradient(circle, rgba(240, 169, 62, 0.34), rgba(240, 169, 62, 0.07) 46%, transparent 68%);
+  filter: blur(26px);
+  pointer-events: none;
+}
+
+.eddy-svg { position: relative; display: block; width: 100%; height: auto; overflow: visible; }
+
+/* Each group gets its own origin so rotation pivots where a joint would be. */
+.rig-podium {
+  transform: translateX(calc(var(--body-tx, 0px) * 0.12));
+  transition: none;
+}
+.rig-body {
+  transform-origin: 210px 400px;
+  transform:
+    translate3d(var(--body-tx, 0px), var(--body-ty, 0px), 0)
+    rotateY(var(--body-ry, 0deg))
+    rotateX(var(--body-rx, 0deg));
+  transform-style: preserve-3d;
+}
+.rig-arms {
+  transform-origin: 210px 260px;
+  transform:
+    translate3d(var(--arms-tx, 0px), var(--arms-ty, 0px), 0)
+    rotateY(var(--arms-ry, 0deg));
+  transform-style: preserve-3d;
+}
+.rig-head {
+  transform-origin: 210px 175px;
+  transform:
+    translate3d(var(--head-tx, 0px), var(--head-ty, 0px), 0)
+    rotateY(var(--head-ry, 0deg))
+    rotateX(var(--head-rx, 0deg));
+  transform-style: preserve-3d;
+}
+.rig-face { transform: translate3d(var(--face-tx, 0px), var(--face-ty, 0px), 0); }
+
+/* The ear pods ride the head group's rotation, which is what we want — they
+   previously carried a counter-transform built from --head-ry, but that
+   multiplies a deg value into translateX and is invalid CSS, so it silently
+   did nothing. */
+
+.eddy-eye { animation: eddy-blink 6.4s infinite; transform-origin: 184px 99px; }
+@keyframes eddy-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+/* ---------- Feature strip ---------- */
+.feature-strip {
+  max-width: 1180px;
+  margin: 26px auto 0;
+  padding: 22px 26px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  background: var(--lp-surface);
+  border: 1px solid var(--lp-border);
+  border-radius: 20px;
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+.feature { display: flex; gap: 13px; align-items: flex-start; padding: 4px 12px; }
+.feature + .feature { border-left: 1px solid var(--lp-border); }
+.feature-icon {
+  flex-shrink: 0;
+  width: 38px; height: 38px;
+  display: grid; place-items: center;
+  border-radius: 11px;
+  background: rgba(240, 169, 62, 0.12);
+  border: 1px solid rgba(240, 169, 62, 0.24);
+  color: var(--accent);
+}
+.feature-icon svg { width: 19px; height: 19px; }
+.feature-title { font-size: 14px; font-weight: 600; margin: 2px 0 4px; }
+.feature-body { font-size: 12.5px; line-height: 1.5; color: var(--lp-muted); margin: 0; }
+
+/* ---------- Examples ---------- */
+.examples { max-width: 1180px; margin: 0 auto; padding: 86px 28px 20px; }
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 3.4vw, 38px);
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  margin: 0;
+  text-align: center;
+}
+.section-sub {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--lp-muted);
+  max-width: 58ch;
+  margin: 14px auto 0;
+  text-align: center;
+}
+.example-grid {
+  margin-top: 34px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 11px;
+}
+.example {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  color: var(--lp-text);
+  background: var(--lp-surface);
+  border: 1px solid var(--lp-border);
+  border-radius: 13px;
+  padding: 17px 19px;
+  cursor: pointer;
+  transition: transform 180ms cubic-bezier(.22,.85,.32,1.2), border-color 180ms ease, background 180ms ease;
+}
+.example:hover { transform: translateY(-2px); border-color: rgba(240, 169, 62, 0.5); background: rgba(240, 169, 62, 0.07); }
+.example:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.example-q { line-height: 1.45; }
+.example-arrow { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; }
+
+/* ---------- Footer ---------- */
+.landing-footer {
+  max-width: 1180px;
+  margin: 76px auto 0;
+  padding: 30px 28px 56px;
+  border-top: 1px solid var(--lp-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+.landing-footer p { font-size: 12.5px; color: var(--lp-faint); margin: 0; max-width: 60ch; line-height: 1.55; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 980px) {
+  .landing-hero {
+    grid-template-columns: 1fr;
+    text-align: center;
+    padding-top: 12px;
+    gap: 8px;
+  }
+  .hero-sub { margin-left: auto; margin-right: auto; }
+  .hero-actions { justify-content: center; }
+  .hero-robot { order: -1; }
+  .eddy-stage { width: min(78%, 330px); }
+  .feature-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .feature + .feature { border-left: none; }
+  .feature:nth-child(odd) { border-right: 1px solid var(--lp-border); }
+}
+
+@media (max-width: 600px) {
+  .landing-nav { padding: 16px 18px; }
+  .landing-hero { padding-inline: 18px; }
+  .feature-strip { grid-template-columns: 1fr; margin-inline: 18px; }
+  .feature:nth-child(odd) { border-right: none; }
+  .feature + .feature { border-top: 1px solid var(--lp-border); padding-top: 16px; }
+  .examples { padding-inline: 18px; }
+  .landing-footer { padding-inline: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eddy-eye { animation: none; }
+  .btn:hover, .example:hover { transform: none; }
+}
