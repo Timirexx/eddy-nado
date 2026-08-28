@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react';
-import { SendIcon, StopIcon, AttachIcon, CloseIcon } from './icons.jsx';
+import { useEffect, useRef, useState } from 'react';
+import { SendIcon, StopIcon, AttachIcon, CloseIcon, MicIcon } from './icons.jsx';
+import { useSpeechToText, SPEECH_TO_TEXT_SUPPORTED } from '../useSpeechToText.js';
 
 const MAX_IMAGES = 4;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -12,6 +13,9 @@ export default function Composer({ value, onChange, onSend, onStop, isStreaming 
   const [attachError, setAttachError] = useState(null);
   const [isDragging, setDragging] = useState(false);
 
+  const speech = useSpeechToText();
+  const listening = speech.state === 'listening';
+
   const canSend = (value.trim() || images.length > 0) && !isStreaming;
 
   function resize() {
@@ -21,9 +25,37 @@ export default function Composer({ value, onChange, onSend, onStop, isStreaming 
     el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
   }
 
+  // Dictated text arrives through React state rather than a direct DOM edit,
+  // so the resize has to run after the textarea's value has actually
+  // committed — a plain state effect, rather than calling resize() right
+  // where onChange fires, which would measure the height one update stale.
+  useEffect(() => {
+    resize();
+  }, [value]);
+
+  // Leaving the chat view (Settings, Leaderboard) unmounts the composer
+  // entirely, so an in-progress recording has to be torn down here or the
+  // browser mic indicator would keep running with nothing listening to it.
+  // Read via a ref rather than depending on `speech` directly: that object's
+  // identity changes on every state transition (idle -> listening -> idle),
+  // which would otherwise fire this cleanup — and cancel the recording it
+  // just started — on the very first transition rather than only on unmount.
+  const speechRef = useRef(speech);
+  speechRef.current = speech;
+  useEffect(() => () => speechRef.current.cancel(), []);
+
+  function handleMicClick() {
+    if (listening) {
+      speech.stop();
+      textareaRef.current?.focus();
+      return;
+    }
+    speech.start(value, onChange);
+    textareaRef.current?.focus();
+  }
+
   function handleInput(e) {
     onChange(e.target.value);
-    resize();
   }
 
   async function addFiles(files) {
@@ -63,6 +95,7 @@ export default function Composer({ value, onChange, onSend, onStop, isStreaming 
 
   function submit() {
     if (!canSend) return;
+    if (listening) speech.stop();
     onSend(value, images.map((img) => img.dataUrl));
     setImages([]);
     setAttachError(null);
@@ -70,6 +103,11 @@ export default function Composer({ value, onChange, onSend, onStop, isStreaming 
   }
 
   function handleKeyDown(e) {
+    if (e.key === 'Escape' && listening) {
+      e.preventDefault();
+      speech.cancel();
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       submit();
@@ -121,13 +159,16 @@ export default function Composer({ value, onChange, onSend, onStop, isStreaming 
         </div>
       )}
 
-      {attachError && <div className="attach-error">{attachError}</div>}
+      {(attachError || speech.error) && (
+        <div className="attach-error">{attachError || speech.error}</div>
+      )}
 
-      <div className="composer">
+      <div className={`composer${listening ? ' listening' : ''}`}>
         <button
           type="button"
           className="attach-btn"
           aria-label="Attach an image"
+          disabled={listening}
           onClick={() => fileInputRef.current?.click()}
         >
           <AttachIcon />
@@ -146,12 +187,36 @@ export default function Composer({ value, onChange, onSend, onStop, isStreaming 
         <textarea
           ref={textareaRef}
           rows={1}
-          placeholder="Ask about Nado, a trading idea, or paste a chart…"
+          placeholder={listening ? 'Listening…' : 'Ask about Nado, a trading idea, or paste a chart…'}
           value={value}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
         />
+        {listening && (
+          <button
+            type="button"
+            className="mic-cancel-btn"
+            aria-label="Cancel voice input"
+            onClick={() => {
+              speech.cancel();
+              textareaRef.current?.focus();
+            }}
+          >
+            <CloseIcon />
+          </button>
+        )}
+        {SPEECH_TO_TEXT_SUPPORTED && (
+          <button
+            type="button"
+            className={`mic-btn${listening ? ' listening' : ''}`}
+            aria-label={listening ? 'Stop listening' : 'Start voice input'}
+            aria-pressed={listening}
+            onClick={handleMicClick}
+          >
+            <MicIcon />
+          </button>
+        )}
         {isStreaming ? (
           <button className="send-btn stop" type="button" aria-label="Stop generating" onClick={onStop}>
             <StopIcon />

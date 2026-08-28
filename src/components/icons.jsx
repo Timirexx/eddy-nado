@@ -168,6 +168,16 @@ export function CloseIcon() {
   );
 }
 
+export function MicIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none">
+      <rect x="5.5" y="1.5" width="5" height="8" rx="2.5" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M3.2 7.5A4.8 4.8 0 0 0 8 12.3a4.8 4.8 0 0 0 4.8-4.8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M8 12.3V14.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function SendIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none">
