@@ -26,7 +26,7 @@ function EmptyState({ onPick, disabled }) {
   );
 }
 
-export default function App() {
+export default function App({ onGoHome }) {
   const [input, setInput] = useState('');
   const [activeNav, setActiveNav] = useState('chat');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -102,6 +102,7 @@ export default function App() {
         <MobileHeader
           onOpenMenu={() => setMenuOpen(true)}
           onNewChat={handleNewChat}
+          onLogoClick={onGoHome}
           historyCount={conversations.length}
         />
         {/* Only rendered while open, so it can never swallow taps on desktop
@@ -124,6 +125,7 @@ export default function App() {
           }}
           onNewChat={handleNewChat}
           onCloseMenu={() => setMenuOpen(false)}
+          onLogoClick={onGoHome}
           conversations={conversations}
           activeConversationId={activeId}
           onSelectConversation={handleSelectConversation}

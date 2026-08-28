@@ -136,6 +136,7 @@ export default function Sidebar({
   onDeleteConversation,
   storageWarning,
   onCloseMenu,
+  onLogoClick,
 }) {
   const { address, isConnected, chain } = useAccount();
   const { t } = useI18n();
@@ -143,11 +144,13 @@ export default function Sidebar({
   return (
     <aside className="sidebar">
       <div className="brand">
-        <EddyMark className="brand-mark" />
-        <div>
-          <div className="brand-name">Eddy</div>
-          <div className="brand-tag">Copilot for Nado</div>
-        </div>
+        <button type="button" className="brand-link" onClick={onLogoClick} aria-label="Go to home">
+          <EddyMark className="brand-mark" />
+          <div>
+            <div className="brand-name">Eddy</div>
+            <div className="brand-tag">Copilot for Nado</div>
+          </div>
+        </button>
         {/* Phone-only: the drawer needs a close affordance inside itself, since
             the scrim alone isn't discoverable. Hidden on desktop. */}
         <button

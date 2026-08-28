@@ -54,7 +54,13 @@ function Root() {
     window.scrollTo(0, 0);
   }, []);
 
-  if (path === CHAT_PATH) return <App />;
+  const goToLanding = useCallback(() => {
+    window.history.pushState({}, '', '/');
+    setPath('/');
+    window.scrollTo(0, 0);
+  }, []);
+
+  if (path === CHAT_PATH) return <App onGoHome={goToLanding} />;
   return <LandingPage onEnter={goToChat} />;
 }
 

@@ -12,7 +12,7 @@ import WalletButton from './WalletButton.jsx';
  *
  * Hidden above the mobile breakpoint, so the desktop layout is untouched.
  */
-export default function MobileHeader({ onOpenMenu, onNewChat, historyCount }) {
+export default function MobileHeader({ onOpenMenu, onNewChat, onLogoClick, historyCount }) {
   return (
     <header className="mobile-header">
       <button
@@ -25,10 +25,10 @@ export default function MobileHeader({ onOpenMenu, onNewChat, historyCount }) {
         {historyCount > 0 && <span className="mobile-badge">{historyCount}</span>}
       </button>
 
-      <div className="mobile-brand">
+      <button type="button" className="mobile-brand" onClick={onLogoClick} aria-label="Go to home">
         <EddyMark className="mobile-brand-mark" />
         <span className="mobile-brand-name">Eddy</span>
-      </div>
+      </button>
 
       <div className="mobile-header-actions">
         <button
