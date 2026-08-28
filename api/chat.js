@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { buildSystemPrompt } from './_system-prompt.js';
 import { checkRateLimit } from './_rate-limit.js';
+import { recordActivity } from './_leaderboard-store.js';
 
 const MODEL = 'claude-opus-5';
 
@@ -114,6 +115,18 @@ export default async function handler(req, res) {
   } catch (err) {
     if (err instanceof BadRequest) return res.status(400).json({ error: err.message });
     throw err;
+  }
+
+  // Leaderboard credit. Awaited but never allowed to throw: the store call is
+  // wrapped internally, so a leaderboard outage cannot cost someone their
+  // answer. `isFirstMessage` marks a new conversation, which scores higher
+  // than another turn inside an existing one.
+  const address = /^0x[a-fA-F0-9]{40}$/.test(req.body?.address || '') ? req.body.address : null;
+  if (address) {
+    await recordActivity(address, {
+      questions: 1,
+      conversations: req.body?.isFirstMessage ? 1 : 0,
+    });
   }
 
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');

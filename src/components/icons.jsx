@@ -97,6 +97,24 @@ export function WalletIcon() {
   );
 }
 
+export function TrophyIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none">
+      <path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M4.5 3.6H3a1.5 1.5 0 0 0 0 3h1.6M11.5 3.6H13a1.5 1.5 0 0 1 0 3h-1.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M8 10v2.2M5.8 13.5h4.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function SparkIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none">
+      <path d="M8 2.2l1.5 3.9 3.9 1.5-3.9 1.5L8 13l-1.5-3.9L2.6 7.6l3.9-1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function MenuIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none">

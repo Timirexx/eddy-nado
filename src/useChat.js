@@ -14,7 +14,13 @@ import { useCallback, useRef, useState } from 'react';
  * and read synchronously, which is what the request builder and the streaming
  * callbacks both need.
  */
-export function useChat(initialThreadId) {
+/**
+ * @param initialThreadId  conversation the thread starts on
+ * @param address          connected wallet, used to credit leaderboard
+ *                         activity. Null when no wallet is connected, in which
+ *                         case nothing is attributed.
+ */
+export function useChat(initialThreadId, address = null) {
   const [messages, setMessages] = useState([]);
   // Which conversation the messages on screen belong to. Updated in the same
   // batch as the messages themselves, so a persistence layer reading the pair
@@ -111,6 +117,9 @@ export function useChat(initialThreadId) {
           signal: controller.signal,
           body: JSON.stringify({
             messages: history.map((m) => ({ role: m.role, text: m.text, images: m.images })),
+            address,
+            // Only the opening message of a thread counts as a new conversation.
+            isFirstMessage: history.length === 1,
           }),
         });
 
@@ -155,7 +164,10 @@ export function useChat(initialThreadId) {
         commit(messagesRef.current.filter((m) => m.id !== id || m.text.trim().length > 0));
       }
     },
-    [commit, patch],
+    // `address` matters: without it the callback captures whatever wallet
+    // state existed at mount, so connecting mid-session would keep posting the
+    // stale value and the user would never be credited.
+    [commit, patch, address],
   );
 
   return {

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useAccount } from 'wagmi';
 import Sidebar from './components/Sidebar.jsx';
 import TopBar from './components/TopBar.jsx';
 import MobileHeader from './components/MobileHeader.jsx';
+import Leaderboard from './components/Leaderboard.jsx';
 import MessageThread from './components/MessageThread.jsx';
 import ChipsRow from './components/ChipsRow.jsx';
 import Composer from './components/Composer.jsx';
@@ -38,8 +40,12 @@ export default function App() {
     getMessages,
   } = useConversations();
 
+  // The connected wallet is what leaderboard activity is credited to; with no
+  // wallet the request carries no address and nothing is attributed.
+  const { address } = useAccount();
+
   const { messages, threadId, error, send, stop, reset, hydrate, isStreaming } =
-    useChat(activeId);
+    useChat(activeId, address ?? null);
 
   // Opening a conversation from history: load its messages into the thread.
   // threadId comes from useChat and always travels with the messages, so the
@@ -108,7 +114,12 @@ export default function App() {
         <Sidebar
           account={account}
           activeNav={activeNav}
-          onNavChange={setActiveNav}
+          onNavChange={(key) => {
+            setActiveNav(key);
+            // On mobile the nav lives in the drawer, so choosing a section
+            // should reveal it rather than leave the drawer covering it.
+            setMenuOpen(false);
+          }}
           onNewChat={handleNewChat}
           onCloseMenu={() => setMenuOpen(false)}
           conversations={conversations}
@@ -122,24 +133,32 @@ export default function App() {
             title="Eddy"
             subtitle={isStreaming ? 'Thinking…' : 'Trading assistant for Nado'}
           />
-          <MessageThread
-            messages={messages}
-            error={error}
-            emptyState={
-              <EmptyState onPick={(prompt) => handleSend(prompt, [])} disabled={isStreaming} />
-            }
-          />
-          <Composer
-            value={input}
-            onChange={setInput}
-            onSend={handleSend}
-            onStop={stop}
-            isStreaming={isStreaming}
-          />
-          <div className="disclaimer">
-            Eddy explains Nado and trading concepts. It has no market data or account access, and
-            doesn't give financial advice.
-          </div>
+          {activeNav === 'leaderboard' ? (
+            <div className="panel-scroll">
+              <Leaderboard />
+            </div>
+          ) : (
+            <>
+              <MessageThread
+                messages={messages}
+                error={error}
+                emptyState={
+                  <EmptyState onPick={(prompt) => handleSend(prompt, [])} disabled={isStreaming} />
+                }
+              />
+              <Composer
+                value={input}
+                onChange={setInput}
+                onSend={handleSend}
+                onStop={stop}
+                isStreaming={isStreaming}
+              />
+              <div className="disclaimer">
+                Eddy explains Nado and trading concepts. It has no market data or account access,
+                and doesn't give financial advice.
+              </div>
+            </>
+          )}
         </div>
       </div>
     </>

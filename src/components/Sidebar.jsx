@@ -8,11 +8,13 @@ import {
   SettingsIcon,
   NewChatIcon,
   CloseIcon,
+  TrophyIcon,
 } from './icons.jsx';
 
 const NAV_ITEMS = [
   { key: 'chat', label: 'Chat', icon: ChatIcon },
   { key: 'history', label: 'History', icon: HistoryIcon },
+  { key: 'leaderboard', label: 'Leaderboard', icon: TrophyIcon },
   { key: 'watching', label: 'Watching', icon: WatchingIcon },
   { key: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
