@@ -1,12 +1,3 @@
-export const account = {
-  equity: '$12,480.32',
-  health: 82,
-  positions: [
-    { symbol: 'BTC-PERP', side: 'long', pnl: '+$318.20' },
-    { symbol: 'ETH-PERP', side: 'short', pnl: '−$96.40' },
-  ],
-};
-
 export const chips = [
   {
     label: 'What is unified margin?',

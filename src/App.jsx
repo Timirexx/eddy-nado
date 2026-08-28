@@ -12,7 +12,7 @@ import Composer from './components/Composer.jsx';
 import { EddyMark } from './components/icons.jsx';
 import { useChat } from './useChat.js';
 import { useConversations } from './useConversations.js';
-import { account, chips } from './data/conversation.js';
+import { chips } from './data/conversation.js';
 
 function EmptyState({ onPick, disabled }) {
   const { t } = useI18n();
@@ -115,7 +115,6 @@ export default function App() {
           />
         )}
         <Sidebar
-          account={account}
           activeNav={activeNav}
           onNavChange={(key) => {
             setActiveNav(key);

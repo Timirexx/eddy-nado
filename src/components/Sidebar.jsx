@@ -1,5 +1,6 @@
 import { useAccount } from 'wagmi';
 import { useI18n } from '../i18n/index.jsx';
+import { useNadoAccount, riskBand, formatUsd } from '../useNadoAccount.js';
 import HistoryList from './HistoryList.jsx';
 import {
   EddyMark,
@@ -24,8 +25,108 @@ function truncateAddress(address) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
+/**
+ * Live Nado subaccount summary. Every figure here comes from the gateway; there
+ * is no placeholder path, so an unavailable state says so rather than showing a
+ * number that isn't the user's.
+ */
+function AccountCard({ address, chainName }) {
+  const { status, data, error } = useNadoAccount(address);
+
+  const header = (
+    <div className="account-row">
+      <span className="wallet-addr">{truncateAddress(address)}</span>
+      <span className="chain-pill">
+        <span className="dot live" />
+        {chainName ?? 'Unknown network'}
+      </span>
+    </div>
+  );
+
+  if (status === 'loading') {
+    return (
+      <div className="account-card">
+        {header}
+        <div className="account-note">Loading your Nado account…</div>
+      </div>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="account-card">
+        {header}
+        <div className="account-note account-note-error">{error}</div>
+      </div>
+    );
+  }
+
+  if (status === 'ready' && !data.exists) {
+    return (
+      <div className="account-card">
+        {header}
+        <div className="account-note">
+          No Nado account for this wallet yet. Deposit at least $5 USDT0 on Ink to open one.
+        </div>
+      </div>
+    );
+  }
+
+  if (status !== 'ready') {
+    return (
+      <div className="account-card">
+        {header}
+      </div>
+    );
+  }
+
+  const usage = data.marginUsage ?? 0;
+  const band = riskBand(usage);
+
+  return (
+    <div className="account-card">
+      {header}
+
+      <div>
+        <div className="equity-label">Account equity</div>
+        <div className="equity-figure">{formatUsd(data.equity)}</div>
+      </div>
+
+      {/* Nado's own metric, not an invented "health" score: usage rises toward
+          100%, and 100% is the point liquidation becomes possible. */}
+      <div className="health-block">
+        <div className="health-header">
+          <span className="health-title">Maintenance margin</span>
+          <span className={`health-value risk-${band.key}`}>{usage.toFixed(1)}%</span>
+        </div>
+        <div className="health-track">
+          <div className={`health-fill risk-${band.key}`} style={{ width: `${Math.max(usage, 1.5)}%` }} />
+        </div>
+        <div className="health-band">{band.label}</div>
+      </div>
+
+      {data.positions.length > 0 ? (
+        <div className="positions-list">
+          {data.positions.map((p) => (
+            <div className="position-row" key={p.productId}>
+              <span className="position-name">
+                <span className={`side-tag ${p.side}`}>{p.side.toUpperCase()}</span>
+                {p.symbol}
+              </span>
+              <span className={`position-pnl ${p.pnl < 0 ? 'down' : 'up'}`}>
+                {formatUsd(p.pnl, { sign: true })}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="account-note">No open perp positions.</div>
+      )}
+    </div>
+  );
+}
+
 export default function Sidebar({
-  account,
   activeNav,
   onNavChange,
   onNewChat,
@@ -99,50 +200,17 @@ export default function Sidebar({
       <div className="sidebar-label">Your account</div>
 
       {isConnected && address ? (
-        <div className="account-card">
-          <div className="account-row">
-            <span className="wallet-addr">{truncateAddress(address)}</span>
-            <span className="chain-pill">
-              <span className="dot live" />
-              {chain?.name ?? 'Unknown network'}
-            </span>
-          </div>
-          <div>
-            <div className="equity-label">Account equity</div>
-            <div className="equity-figure">{account.equity}</div>
-          </div>
-          <div className="health-block">
-            <div className="health-header">
-              <span className="health-title">Margin health</span>
-              <span className="health-value">{account.health}%</span>
-            </div>
-            <div className="health-track">
-              <div className="health-fill" style={{ width: `${account.health}%` }} />
-            </div>
-          </div>
-          <div className="positions-list">
-            {account.positions.map((p) => (
-              <div className="position-row" key={p.symbol}>
-                <span className="position-name">
-                  <span className={`side-tag ${p.side}`}>{p.side.toUpperCase()}</span>
-                  {p.symbol}
-                </span>
-                <span className={`position-pnl ${p.pnl.startsWith('-') || p.pnl.startsWith('−') ? 'down' : 'up'}`}>
-                  {p.pnl}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="account-demo-note">Sample data — Nado account sync isn't wired up yet.</div>
-        </div>
+        <AccountCard address={address} chainName={chain?.name} />
       ) : (
         <div className="account-card account-card-empty">
-          <p className="account-empty-text">Connect a wallet to see your positions, margin health, and account equity.</p>
+          <p className="account-empty-text">
+            Connect a wallet to see your live Nado positions, margin usage, and account equity.
+          </p>
         </div>
       )}
 
       <div className="sidebar-footer">
-        Eddy reads your subaccount and Nado's docs to answer — it never signs or places trades on its own.
+        Eddy answers from Nado's documentation — it never signs or places trades on its own.
       </div>
     </aside>
   );
