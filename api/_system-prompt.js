@@ -67,7 +67,13 @@ export function buildSystemPrompt() {
     {
       type: 'text',
       text: INSTRUCTIONS,
-      cache_control: { type: 'ephemeral' },
+      // 1-hour TTL, not the 5-minute default. The prompt is ~80K tokens, so a
+      // cache write costs ~$0.50 against ~$0.04 for a read. Real usage is
+      // sporadic — a question every few minutes, not every few seconds — so
+      // with a 5-minute window almost every request missed and paid the full
+      // write. The 1h write costs more (2x vs 1.25x) but is amortised across
+      // the hour: roughly 3x cheaper over a realistic session.
+      cache_control: { type: 'ephemeral', ttl: '1h' },
     },
   ];
 }

@@ -200,6 +200,14 @@ export default async function handler(req, res) {
 
 function describeError(err) {
   if (err?.name === 'APIUserAbortError') return 'Cancelled.';
+
+  // Out of credit arrives as a plain 400, so without this it fell into the
+  // generic branch and reported "something went wrong" for a cause that is
+  // specific, actionable, and nothing to do with the question asked.
+  const message = err?.error?.error?.message || err?.message || '';
+  if (/credit balance is too low/i.test(message)) {
+    return 'The assistant’s Anthropic account is out of credits. Top up at console.anthropic.com under Plans & Billing — no code change is needed.';
+  }
   if (err instanceof Anthropic.AuthenticationError) {
     return 'The assistant’s API key was rejected. Check ANTHROPIC_API_KEY in the Vercel project settings.';
   }
