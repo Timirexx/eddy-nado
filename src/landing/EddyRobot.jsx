@@ -3,59 +3,52 @@ import { useEffect, useRef } from 'react';
 /**
  * Eddy — a rigged robot that tracks the cursor.
  *
- * Motion model
- * ------------
- * Each layer is a damped spring rather than a lerp. A lerp always decelerates
- * into its target, which reads as sluggish and can never catch a fast cursor;
- * a spring accelerates, carries momentum, and settles — so a quick sweep across
- * the page is actually followed, and the stop has a tiny natural overshoot.
+ * Skeleton
+ * --------
+ * Groups are nested the way a real armature is, so a parent joint carries
+ * everything below it and each child adds its own rotation on top:
  *
- * Stiffness is graded through the body, and that gradient is the whole trick:
+ *   legs ─ hip ─ thigh ─ knee ─ shin ─ ankle ─ foot
+ *   body ─ torso ─ shoulder ─ upper arm ─ elbow ─ forearm ─ wrist ─ hand ─ fingers
+ *   head ─ face
  *
- *   face   — stiffest, snaps to the cursor first
- *   head   — close behind, so the look leads the turn
- *   body   — softer; the torso is heavy and follows
- *   arms   — softest, trailing like limbs being carried
+ * The legs deliberately sit OUTSIDE the body group. Feet are planted on the
+ * podium; if they rode the torso they would swing with it and the robot would
+ * look like it was skating. Instead the pelvis counter-rotates a little against
+ * the shoulders — the torsion you get in a real body when the upper half turns
+ * first.
  *
- * Because each layer lags the one above it, a fast movement briefly stretches
- * the pose — eyes already there, head arriving, shoulders still catching up —
- * which is what makes it read as a body reacting rather than a sprite rotating.
+ * Motion
+ * ------
+ * Every channel is a damped spring. A lerp only decelerates into its target, so
+ * it feels sluggish and can never catch a fast cursor; a spring accelerates,
+ * carries momentum and settles.
  *
- * Integrated at a fixed 60Hz timestep with an accumulator, so the feel is
- * identical on 60/120/144Hz displays and a backgrounded tab cannot explode the
- * spring when it resumes with a huge delta.
+ * Stiffness is graded down the body so the pose stretches during a fast move —
+ * eyes already there, head arriving, shoulders following, hands last. Measured
+ * at 60Hz, time to 90% of travel: face/head 83ms, body 117ms, arms 150ms,
+ * limbs 210ms.
  *
- * Written to CSS variables from one rAF loop; routing cursor movement through
- * React state re-renders this whole SVG per mousemove and drops frames.
+ * Integrated on a fixed 60Hz accumulator, so the feel is identical across
+ * refresh rates and a backgrounded tab cannot explode the spring on resume.
+ * Written straight to CSS variables from one rAF loop — routing cursor movement
+ * through React state re-renders this SVG per mousemove and drops frames.
  */
 
 const STEP = 1 / 60;
-const MAX_FRAME = 0.1; // clamp the dt spike after a tab switch
+const MAX_FRAME = 0.1;
 
-// stiffness = how hard it pulls toward the cursor; damping = how fast the
-// wobble dies. Tuned by sweeping the pair for the fastest response that still
-// keeps overshoot under ~8%: past that the head rubber-bands and reads as
-// cartoon bounce rather than a machine settling.
-//
-// Measured at 60Hz — time to 90% of the turn, and peak excursion:
-//   face  83ms  8.6%
-//   head  83ms  7.0%
-//   body 117ms  5.0%
-//   arms 150ms  4.3%
-//
-// The spread is the point: 80ms into a flick the head is 81% of the way round
-// while the torso is only 64%, so the look leads and the body is dragged after
-// it.
 const LAYERS = {
   face: { stiffness: 0.22, damping: 0.60 },
   head: { stiffness: 0.20, damping: 0.60 },
   body: { stiffness: 0.13, damping: 0.64 },
   arms: { stiffness: 0.09, damping: 0.68 },
+  // Softest channel, used for everything that should visibly trail: forearms,
+  // wrists, fingers and the knees taking the weight shift.
+  limbs: { stiffness: 0.065, damping: 0.72 },
   glow: { stiffness: 0.07, damping: 0.72 },
 };
 
-// Travel limits, in degrees or px. Bounded so the rig never breaks the
-// silhouette — a real neck has a range.
 const RANGE = {
   headYaw: 22,
   headPitch: 13,
@@ -65,24 +58,20 @@ const RANGE = {
   bodyPitch: 5,
   bodyShiftX: 13,
   bodyShiftY: 6,
-  armsYaw: 6,
-  armsShiftX: 7,
   faceX: 11,
   faceY: 7,
   glowX: 22,
 };
 
-function makeSpring() {
-  return { x: 0, y: 0, vx: 0, vy: 0 };
-}
+const makeSpring = () => ({ x: 0, y: 0, vx: 0, vy: 0 });
 
-function integrate(spring, tx, ty, { stiffness, damping }) {
-  spring.vx += (tx - spring.x) * stiffness;
-  spring.vy += (ty - spring.y) * stiffness;
-  spring.vx *= damping;
-  spring.vy *= damping;
-  spring.x += spring.vx;
-  spring.y += spring.vy;
+function integrate(s, tx, ty, { stiffness, damping }) {
+  s.vx += (tx - s.x) * stiffness;
+  s.vy += (ty - s.y) * stiffness;
+  s.vx *= damping;
+  s.vy *= damping;
+  s.x += s.vx;
+  s.y += s.vy;
 }
 
 export default function EddyRobot() {
@@ -91,9 +80,7 @@ export default function EddyRobot() {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (reduced.matches) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const target = { x: 0, y: 0 };
     const springs = {
@@ -101,12 +88,11 @@ export default function EddyRobot() {
       head: makeSpring(),
       body: makeSpring(),
       arms: makeSpring(),
+      limbs: makeSpring(),
       glow: makeSpring(),
     };
 
     const onMove = (e) => {
-      // Normalised against the viewport so Eddy tracks the cursor anywhere on
-      // the page, not only while it is over the artwork.
       target.x = Math.max(-1, Math.min(1, (e.clientX / window.innerWidth) * 2 - 1));
       target.y = Math.max(-1, Math.min(1, (e.clientY / window.innerHeight) * 2 - 1));
     };
@@ -124,6 +110,7 @@ export default function EddyRobot() {
     let accumulator = 0;
     let elapsed = 0;
     const style = root.style;
+    const set = (k, v) => style.setProperty(k, v);
 
     const tick = (now) => {
       const dt = Math.min((now - last) / 1000, MAX_FRAME);
@@ -131,9 +118,10 @@ export default function EddyRobot() {
       accumulator += dt;
       elapsed += dt;
 
-      // Idle life. Small enough that cursor tracking always dominates, and
-      // built from mismatched frequencies so it never visibly loops.
+      // Idle life, built from mismatched frequencies so it never visibly loops.
       const breath = Math.sin(elapsed * 1.1);
+      const breath2 = Math.sin(elapsed * 0.83 + 1.1);
+      const sway = Math.sin(elapsed * 0.47);
       const driftX = Math.sin(elapsed * 0.31) * 0.1 + Math.sin(elapsed * 0.73) * 0.04;
       const driftY = Math.cos(elapsed * 0.24) * 0.08;
 
@@ -145,37 +133,81 @@ export default function EddyRobot() {
         integrate(springs.head, tx, ty, LAYERS.head);
         integrate(springs.body, tx, ty, LAYERS.body);
         integrate(springs.arms, tx, ty, LAYERS.arms);
+        integrate(springs.limbs, tx, ty, LAYERS.limbs);
         integrate(springs.glow, tx, ty, LAYERS.glow);
         accumulator -= STEP;
       }
 
-      const { face, head, body, arms, glow } = springs;
+      const { face, head, body, arms, limbs, glow } = springs;
+      const turn = body.x; // -1 left … +1 right
+      const lean = body.y; // -1 up … +1 down
+      const absTurn = Math.abs(turn);
 
-      style.setProperty('--head-ry', `${head.x * RANGE.headYaw}deg`);
-      style.setProperty('--head-rx', `${-head.y * RANGE.headPitch}deg`);
-      // A head that turns also swings a little; pure rotation reads as a
-      // billboard pivoting on the spot.
-      style.setProperty('--head-tx', `${head.x * RANGE.headShiftX}px`);
-      style.setProperty('--head-ty', `${head.y * RANGE.headShiftY + breath * 1.6}px`);
-      // Counter-roll: heads tilt slightly into a turn.
-      style.setProperty('--head-rz', `${head.x * -3.2}deg`);
+      /* ---------- Head ---------- */
+      set('--head-ry', `${head.x * RANGE.headYaw}deg`);
+      set('--head-rx', `${-head.y * RANGE.headPitch}deg`);
+      set('--head-tx', `${head.x * RANGE.headShiftX}px`);
+      set('--head-ty', `${head.y * RANGE.headShiftY + breath * 1.6}px`);
+      set('--head-rz', `${head.x * -3.2}deg`);
+      set('--face-tx', `${face.x * RANGE.faceX}px`);
+      set('--face-ty', `${face.y * RANGE.faceY}px`);
 
-      style.setProperty('--body-ry', `${body.x * RANGE.bodyYaw}deg`);
-      style.setProperty('--body-rx', `${-body.y * RANGE.bodyPitch}deg`);
-      style.setProperty('--body-tx', `${body.x * RANGE.bodyShiftX}px`);
-      style.setProperty('--body-ty', `${body.y * RANGE.bodyShiftY + breath * 2.6}px`);
-      style.setProperty('--body-rz', `${body.x * -1.6}deg`);
+      /* ---------- Torso ---------- */
+      set('--body-ry', `${turn * RANGE.bodyYaw}deg`);
+      set('--body-rx', `${-lean * RANGE.bodyPitch}deg`);
+      set('--body-tx', `${turn * RANGE.bodyShiftX}px`);
+      set('--body-ty', `${lean * RANGE.bodyShiftY + breath * 2.6}px`);
+      set('--body-rz', `${turn * -1.6}deg`);
 
-      style.setProperty('--arms-ry', `${arms.x * RANGE.armsYaw}deg`);
-      style.setProperty('--arms-tx', `${arms.x * RANGE.armsShiftX}px`);
-      style.setProperty('--arms-ty', `${breath * 1.8}px`);
+      /* ---------- Arms ----------
+       * Asymmetric on purpose. Turning right opens the far (left) shoulder out
+       * and tucks the near one in, the way a torso turn carries one arm across
+       * the body. Symmetric arms are most of what makes a rig look pasted on.
+       */
+      // Resting splay. In SVG a positive rotation swings a hanging limb toward
+      // -x, so the signs are mirrored to push both arms away from the torso;
+      // without it they hang flat against the body and read as welded on.
+      const armSwing = arms.x;
+      set('--arm-l-rot', `${7 + armSwing * 9 - absTurn * 4 + breath * 1.6}deg`);
+      set('--arm-r-rot', `${-7 + armSwing * 9 + absTurn * 4 - breath * 1.6}deg`);
 
-      style.setProperty('--face-tx', `${face.x * RANGE.faceX}px`);
-      style.setProperty('--face-ty', `${face.y * RANGE.faceY}px`);
+      // Elbows keep a resting bend and flex a little more as the body works —
+      // a perfectly straight arm is the other half of the "stiff" read.
+      set('--elbow-l-rot', `${5 + Math.max(0, armSwing) * 9 + absTurn * 3 + breath2 * 1.4}deg`);
+      set('--elbow-r-rot', `${-5 + Math.min(0, armSwing) * 9 - absTurn * 3 - breath2 * 1.4}deg`);
 
-      style.setProperty('--glow-tx', `${glow.x * RANGE.glowX}px`);
-      style.setProperty('--shadow-tx', `${body.x * 9}px`);
-      style.setProperty('--shadow-sx', `${1 - Math.abs(body.x) * 0.05}`);
+      // Wrists and fingers ride the softest spring, so they settle last.
+      set('--wrist-l-rot', `${limbs.x * 11 + breath2 * 2.4}deg`);
+      set('--wrist-r-rot', `${limbs.x * 11 - breath2 * 2.4}deg`);
+      set('--fingers-l', `${4 + Math.abs(limbs.x) * 7 + breath * 2}deg`);
+      set('--fingers-r', `${4 + Math.abs(limbs.x) * 7 - breath * 2}deg`);
+
+      /* ---------- Legs ----------
+       * The pelvis counter-rotates against the shoulders and the weight shifts
+       * onto the leg the robot is turning away from, so the stance
+       * counterbalances the turn instead of the whole robot sliding sideways.
+       */
+      set('--legs-rot', `${turn * -3.4}deg`);
+      set('--legs-tx', `${turn * 3.5}px`);
+      set('--legs-ty', `${Math.max(0, lean) * 2.5 + absTurn * 1.2}px`);
+
+      const weightL = Math.max(0, -turn); // turning left loads the left leg
+      const weightR = Math.max(0, turn);
+
+      set('--hip-l-rot', `${turn * 4 + weightL * 2}deg`);
+      set('--hip-r-rot', `${turn * 4 - weightR * 2}deg`);
+      // The unloaded knee bends; the loaded one straightens and takes the mass.
+      set('--knee-l-rot', `${3 + weightR * 7 + Math.max(0, lean) * 4 + breath * 0.8}deg`);
+      set('--knee-r-rot', `${-3 - weightL * 7 - Math.max(0, lean) * 4 - breath * 0.8}deg`);
+      // Feet stay flat on the podium; only a slight roll as weight moves.
+      set('--foot-l-rot', `${-turn * 2.2}deg`);
+      set('--foot-r-rot', `${-turn * 2.2}deg`);
+
+      /* ---------- Staging ---------- */
+      set('--glow-tx', `${glow.x * RANGE.glowX}px`);
+      set('--shadow-tx', `${turn * 9}px`);
+      set('--shadow-sx', `${1 - absTurn * 0.05}`);
+      set('--sway', `${sway * 0.6}px`);
 
       frame = requestAnimationFrame(tick);
     };
@@ -194,7 +226,6 @@ export default function EddyRobot() {
       <div className="eddy-glow" />
       <svg className="eddy-svg" viewBox="0 0 440 580" fill="none">
         <defs>
-          {/* Shell: lit from upper-left, warm bounce from the podium below. */}
           <linearGradient id="shellA" x1="0.18" y1="0.02" x2="0.82" y2="1">
             <stop offset="0" stopColor="#FFE9A8" />
             <stop offset="0.18" stopColor="#FFC547" />
@@ -213,8 +244,6 @@ export default function EddyRobot() {
             <stop offset="0.72" stopColor="#E8940F" />
             <stop offset="1" stopColor="#8A4E04" />
           </radialGradient>
-
-          {/* Dark articulated parts */}
           <linearGradient id="jointA" x1="0.2" y1="0" x2="0.8" y2="1">
             <stop offset="0" stopColor="#4A5058" />
             <stop offset="0.4" stopColor="#23272E" />
@@ -225,15 +254,12 @@ export default function EddyRobot() {
             <stop offset="0.5" stopColor="#252A31" />
             <stop offset="1" stopColor="#0B0E12" />
           </radialGradient>
-
-          {/* Visor glass */}
           <linearGradient id="visorGlass" x1="0.15" y1="0" x2="0.85" y2="1">
             <stop offset="0" stopColor="#2A2F38" />
             <stop offset="0.35" stopColor="#0D1015" />
             <stop offset="0.75" stopColor="#05070A" />
             <stop offset="1" stopColor="#14181F" />
           </linearGradient>
-
           <linearGradient id="podiumTop" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#31363F" />
             <stop offset="0.5" stopColor="#181C22" />
@@ -243,18 +269,14 @@ export default function EddyRobot() {
             <stop offset="0" stopColor="#20242B" />
             <stop offset="1" stopColor="#070910" />
           </linearGradient>
-
-          {/* Specular sweep reused on rounded shells */}
           <linearGradient id="specular" x1="0" y1="0" x2="0.4" y2="1">
             <stop offset="0" stopColor="#fff" stopOpacity="0.85" />
             <stop offset="1" stopColor="#fff" stopOpacity="0" />
           </linearGradient>
-          {/* Warm rim from the podium glow, applied under the chassis */}
           <linearGradient id="rimWarm" x1="0" y1="1" x2="0" y2="0">
             <stop offset="0" stopColor="#FFAE38" stopOpacity="0.9" />
             <stop offset="1" stopColor="#FFAE38" stopOpacity="0" />
           </linearGradient>
-
           <filter id="blurSm" x="-60%" y="-60%" width="220%" height="220%">
             <feGaussianBlur stdDeviation="3" />
           </filter>
@@ -264,10 +286,8 @@ export default function EddyRobot() {
           <filter id="blurLg" x="-60%" y="-60%" width="220%" height="220%">
             <feGaussianBlur stdDeviation="18" />
           </filter>
-
-          {/* Keeps the face inside the visor when it shifts to an extreme. */}
           <clipPath id="visorClip">
-            <path d="M220 58c44 0 72 26 72 60s-28 55-72 55-72-22-72-55 28-60 72-60z" />
+            <path d="M220 84c44 0 72 26 72 60s-28 55-72 55-72-22-72-55 28-60 72-60z" />
           </clipPath>
         </defs>
 
@@ -278,149 +298,147 @@ export default function EddyRobot() {
           <ellipse cx="220" cy="500" rx="108" ry="23" fill="url(#podiumTop)" />
           <ellipse cx="220" cy="500" rx="108" ry="23" stroke="#FFB33F" strokeOpacity="0.75" strokeWidth="1.8" />
           <ellipse cx="220" cy="498" rx="88" ry="17" fill="#080A0E" opacity="0.85" />
-          {/* Reflected bloom on the polished top */}
-          <ellipse
-            className="rig-shadow"
-            cx="220" cy="496" rx="52" ry="11"
-            fill="#FFB33F" opacity="0.3" filter="url(#blurMd)"
-          />
+          <ellipse className="rig-shadow" cx="220" cy="496" rx="52" ry="11" fill="#FFB33F" opacity="0.3" filter="url(#blurMd)" />
         </g>
-
-        {/* Contact shadow — tracks the body so the robot stays planted. */}
         <ellipse className="rig-shadow" cx="220" cy="492" rx="62" ry="11" fill="#000" opacity="0.6" filter="url(#blurMd)" />
 
-        {/* ---------- Legs ---------- */}
-        <g className="rig-body">
+        {/* ---------- Legs ----------
+            Outside the body group: the feet are planted, and the pelvis
+            counter-rotates against the shoulders. */}
+        <g className="rig-legs">
           {/* left leg */}
-          <circle cx="192" cy="392" r="19" fill="url(#jointSphere)" />
-          <path d="M177 396h30v34c0 7-6 12-15 12s-15-5-15-12z" fill="url(#shellA)" />
-          <circle cx="192" cy="440" r="15" fill="url(#jointSphere)" />
-          <path d="M180 446h24v22c0 5-5 9-12 9s-12-4-12-9z" fill="url(#shellB)" />
-          <path d="M170 468h44c6 0 10 5 10 11v6c0 6-4 10-10 10h-44c-6 0-10-4-10-10v-6c0-6 4-11 10-11z" fill="url(#shellA)" />
-          <ellipse cx="192" cy="489" rx="24" ry="6" fill="#0C0F14" opacity="0.9" />
+          <g className="hip-l">
+            <circle cx="194" cy="388" r="19" fill="url(#jointSphere)" />
+            <circle cx="188" cy="382" r="6" fill="#fff" opacity="0.16" filter="url(#blurSm)" />
+            <path d="M179 390h30v40c0 7-6 12-15 12s-15-5-15-12z" fill="url(#shellA)" />
+            <g className="knee-l">
+              <circle cx="194" cy="436" r="15" fill="url(#jointSphere)" />
+              <path d="M182 440h24v30c0 6-5 10-12 10s-12-4-12-10z" fill="url(#shellB)" />
+              <g className="foot-l">
+                <path d="M172 474h44c6 0 10 5 10 11v5c0 6-4 10-10 10h-44c-6 0-10-4-10-10v-5c0-6 4-11 10-11z" fill="url(#shellA)" />
+                <ellipse cx="194" cy="494" rx="25" ry="6" fill="#0C0F14" opacity="0.9" />
+              </g>
+            </g>
+          </g>
 
           {/* right leg */}
-          <circle cx="248" cy="392" r="19" fill="url(#jointSphere)" />
-          <path d="M233 396h30v34c0 7-6 12-15 12s-15-5-15-12z" fill="url(#shellA)" />
-          <circle cx="248" cy="440" r="15" fill="url(#jointSphere)" />
-          <path d="M236 446h24v22c0 5-5 9-12 9s-12-4-12-9z" fill="url(#shellB)" />
-          <path d="M226 468h44c6 0 10 5 10 11v6c0 6-4 10-10 10h-44c-6 0-10-4-10-10v-6c0-6 4-11 10-11z" fill="url(#shellA)" />
-          <ellipse cx="248" cy="489" rx="24" ry="6" fill="#0C0F14" opacity="0.9" />
+          <g className="hip-r">
+            <circle cx="246" cy="388" r="19" fill="url(#jointSphere)" />
+            <circle cx="240" cy="382" r="6" fill="#fff" opacity="0.16" filter="url(#blurSm)" />
+            <path d="M231 390h30v40c0 7-6 12-15 12s-15-5-15-12z" fill="url(#shellA)" />
+            <g className="knee-r">
+              <circle cx="246" cy="436" r="15" fill="url(#jointSphere)" />
+              <path d="M234 440h24v30c0 6-5 10-12 10s-12-4-12-10z" fill="url(#shellB)" />
+              <g className="foot-r">
+                <path d="M224 474h44c6 0 10 5 10 11v5c0 6-4 10-10 10h-44c-6 0-10-4-10-10v-5c0-6 4-11 10-11z" fill="url(#shellA)" />
+                <ellipse cx="246" cy="494" rx="25" ry="6" fill="#0C0F14" opacity="0.9" />
+              </g>
+            </g>
+          </g>
+        </g>
 
-          {/* Neck. Belongs to the body, not the head: if it rode the head group
-              it would swing away with it and tear a gap open above the torso.
-              Run tall so the helmet still covers its top at full head travel. */}
+        {/* ---------- Torso ---------- */}
+        <g className="rig-body">
+          {/* pelvis — overlaps the hip balls so the join never gaps */}
+          <path d="M186 348h68v30c0 10-15 17-34 17s-34-7-34-17z" fill="url(#jointA)" />
+
+          {/* neck, carried by the body so it cannot tear away from the torso */}
           <path d="M200 176h40v66c0 8-9 13-20 13s-20-5-20-13z" fill="url(#jointA)" />
           <path d="M204 182h32v10c0 3-7 5-16 5s-16-2-16-5z" fill="#0A0D12" opacity="0.7" />
-
-          {/* ---------- Pelvis + torso ---------- */}
-          <path d="M186 350h68v26c0 10-15 17-34 17s-34-7-34-17z" fill="url(#jointA)" />
 
           <path
             d="M220 232c40 0 62 20 66 52l5 46c3 26-28 42-71 42s-74-16-71-42l5-46c4-32 26-52 66-52z"
             fill="url(#shellA)"
           />
-          {/* torso specular */}
-          <path
-            d="M186 258c8-16 24-24 40-25-20 6-33 20-38 40z"
-            fill="url(#specular)" opacity="0.5"
-          />
-          {/* warm bounce along the underside */}
+          <path d="M186 258c8-16 24-24 40-25-20 6-33 20-38 40z" fill="url(#specular)" opacity="0.5" />
           <path
             d="M152 330c0 26 30 42 68 42s71-16 68-42l-3 26c2 24-28 40-65 40s-67-16-65-40z"
             fill="url(#rimWarm)" opacity="0.55"
           />
 
-          {/* Chest badge */}
+          {/* chest badge */}
           <circle cx="220" cy="300" r="37" fill="#0A0D12" />
           <circle cx="220" cy="300" r="37" stroke="#2A3038" strokeWidth="1.4" />
           <circle cx="220" cy="300" r="29" fill="url(#shellB)" />
           <circle cx="220" cy="300" r="29" stroke="#8A5205" strokeOpacity="0.5" strokeWidth="1" />
           <circle cx="220" cy="300" r="22" fill="none" stroke="#14171D" strokeWidth="3.4" />
-          <path
-            d="M210 312v-25l20 25v-25"
-            stroke="#14171D" strokeWidth="4.6" strokeLinecap="round" strokeLinejoin="round" fill="none"
-          />
-        </g>
+          <path d="M210 312v-25l20 25v-25" stroke="#14171D" strokeWidth="4.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
 
-        {/* ---------- Arms ---------- */}
-        <g className="rig-arms">
-          {/* left arm */}
-          <circle cx="164" cy="266" r="23" fill="url(#shellSphere)" />
-          <circle cx="158" cy="259" r="7" fill="#fff" opacity="0.35" filter="url(#blurSm)" />
-          <circle cx="160" cy="298" r="13" fill="url(#jointSphere)" />
-          <path d="M148 300h24v34c0 6-5 10-12 10s-12-4-12-10z" fill="url(#shellA)" />
-          <circle cx="160" cy="348" r="13" fill="url(#jointSphere)" />
-          <path d="M149 352h22v26c0 6-5 10-11 10s-11-4-11-10z" fill="url(#shellB)" />
-          {/* hand */}
-          <path d="M147 380h26c3 12 1 22-6 27-8 5-17 2-20-6-2-7-2-15 0-21z" fill="url(#jointA)" />
-          <path d="M150 404c-3 6-2 12 2 15M158 408c-2 6-1 11 3 14M166 408c-1 6 0 11 4 13" stroke="#1B1F26" strokeWidth="4" strokeLinecap="round" />
+          {/* ---------- Arms ----------
+              Nested inside the torso so they are carried by the body turn, then
+              add their own swing at each joint. */}
+          <g className="arm-l">
+            <circle cx="164" cy="268" r="23" fill="url(#shellSphere)" />
+            <circle cx="158" cy="261" r="7" fill="#fff" opacity="0.35" filter="url(#blurSm)" />
+            <path d="M152 268h24v38c0 7-5 12-12 12s-12-5-12-12z" fill="url(#shellA)" />
+            <g className="forearm-l">
+              <circle cx="164" cy="306" r="13" fill="url(#jointSphere)" />
+              <path d="M153 308h22v36c0 6-5 10-11 10s-11-4-11-10z" fill="url(#shellB)" />
+              <g className="hand-l">
+                <circle cx="164" cy="350" r="10" fill="url(#jointSphere)" />
+                <path d="M153 352h22v18c0 7-5 12-11 12s-11-5-11-12z" fill="url(#jointA)" />
+                <g className="fingers-l">
+                  <path d="M156 380c-3 7-2 13 2 16" stroke="#1B1F26" strokeWidth="4.4" strokeLinecap="round" />
+                  <path d="M164 383c-2 7-1 12 3 15" stroke="#1B1F26" strokeWidth="4.4" strokeLinecap="round" />
+                  <path d="M172 381c-1 7 0 12 4 14" stroke="#1B1F26" strokeWidth="4.4" strokeLinecap="round" />
+                </g>
+              </g>
+            </g>
+          </g>
 
-          {/* right arm */}
-          <circle cx="276" cy="266" r="23" fill="url(#shellSphere)" />
-          <circle cx="270" cy="259" r="7" fill="#fff" opacity="0.35" filter="url(#blurSm)" />
-          <circle cx="280" cy="298" r="13" fill="url(#jointSphere)" />
-          <path d="M268 300h24v34c0 6-5 10-12 10s-12-4-12-10z" fill="url(#shellA)" />
-          <circle cx="280" cy="348" r="13" fill="url(#jointSphere)" />
-          <path d="M269 352h22v26c0 6-5 10-11 10s-11-4-11-10z" fill="url(#shellB)" />
-          <path d="M267 380h26c2 6 2 14 0 21-3 8-12 11-20 6-7-5-9-15-6-27z" fill="url(#jointA)" />
-          <path d="M272 404c-3 6-2 12 2 15M280 408c-2 6-1 11 3 14M288 408c-1 6 0 11 4 13" stroke="#1B1F26" strokeWidth="4" strokeLinecap="round" />
+          <g className="arm-r">
+            <circle cx="276" cy="268" r="23" fill="url(#shellSphere)" />
+            <circle cx="270" cy="261" r="7" fill="#fff" opacity="0.35" filter="url(#blurSm)" />
+            <path d="M264 268h24v38c0 7-5 12-12 12s-12-5-12-12z" fill="url(#shellA)" />
+            <g className="forearm-r">
+              <circle cx="276" cy="306" r="13" fill="url(#jointSphere)" />
+              <path d="M265 308h22v36c0 6-5 10-11 10s-11-4-11-10z" fill="url(#shellB)" />
+              <g className="hand-r">
+                <circle cx="276" cy="350" r="10" fill="url(#jointSphere)" />
+                <path d="M265 352h22v18c0 7-5 12-11 12s-11-5-11-12z" fill="url(#jointA)" />
+                <g className="fingers-r">
+                  <path d="M268 380c-3 7-2 13 2 16" stroke="#1B1F26" strokeWidth="4.4" strokeLinecap="round" />
+                  <path d="M276 383c-2 7-1 12 3 15" stroke="#1B1F26" strokeWidth="4.4" strokeLinecap="round" />
+                  <path d="M284 381c-1 7 0 12 4 14" stroke="#1B1F26" strokeWidth="4.4" strokeLinecap="round" />
+                </g>
+              </g>
+            </g>
+          </g>
         </g>
 
         {/* ---------- Head ---------- */}
         <g className="rig-head">
-          {/* Seats the head down onto the shoulders. The reference silhouette
-              is chibi — barely any neck showing — and the pivot in the CSS is
-              offset to match this translate. */}
-          <g transform="translate(0,26)">
-          {/* ear pods */}
           <g>
-            <ellipse cx="130" cy="132" rx="27" ry="31" fill="url(#shellSphere)" />
-            <ellipse cx="130" cy="132" rx="14" ry="17" fill="#0B0E13" />
-            <ellipse cx="130" cy="132" rx="8" ry="10" fill="#191D24" />
+            <ellipse cx="130" cy="158" rx="27" ry="31" fill="url(#shellSphere)" />
+            <ellipse cx="130" cy="158" rx="14" ry="17" fill="#0B0E13" />
+            <ellipse cx="130" cy="158" rx="8" ry="10" fill="#191D24" />
           </g>
           <g>
-            <ellipse cx="310" cy="132" rx="27" ry="31" fill="url(#shellSphere)" />
-            <ellipse cx="310" cy="132" rx="14" ry="17" fill="#0B0E13" />
-            <ellipse cx="310" cy="132" rx="8" ry="10" fill="#191D24" />
+            <ellipse cx="310" cy="158" rx="27" ry="31" fill="url(#shellSphere)" />
+            <ellipse cx="310" cy="158" rx="14" ry="17" fill="#0B0E13" />
+            <ellipse cx="310" cy="158" rx="8" ry="10" fill="#191D24" />
           </g>
 
-          {/* helmet */}
-          <path
-            d="M220 30c56 0 94 36 94 84 0 46-38 74-94 74s-94-28-94-74c0-48 38-84 94-84z"
-            fill="url(#shellSphere)"
-          />
-          {/* broad top-left specular, the main read of "glossy" */}
-          <ellipse cx="176" cy="72" rx="40" ry="26" fill="#fff" opacity="0.4" filter="url(#blurMd)" transform="rotate(-24 176 72)" />
-          <ellipse cx="164" cy="64" rx="15" ry="9" fill="#fff" opacity="0.55" filter="url(#blurSm)" transform="rotate(-24 164 64)" />
-          {/* warm rim along the lower helmet */}
-          <path d="M130 130c8 34 44 56 90 56s82-22 90-56c-4 44-42 70-90 70s-86-26-90-70z" fill="url(#rimWarm)" opacity="0.5" />
+          <path d="M220 56c56 0 94 36 94 84 0 46-38 74-94 74s-94-28-94-74c0-48 38-84 94-84z" fill="url(#shellSphere)" />
+          <ellipse cx="176" cy="98" rx="40" ry="26" fill="#fff" opacity="0.4" filter="url(#blurMd)" transform="rotate(-24 176 98)" />
+          <ellipse cx="164" cy="90" rx="15" ry="9" fill="#fff" opacity="0.55" filter="url(#blurSm)" transform="rotate(-24 164 90)" />
+          <path d="M130 156c8 34 44 56 90 56s82-22 90-56c-4 44-42 70-90 70s-86-26-90-70z" fill="url(#rimWarm)" opacity="0.5" />
 
-          {/* visor */}
-          <path
-            d="M220 58c44 0 72 26 72 60s-28 55-72 55-72-22-72-55 28-60 72-60z"
-            fill="url(#visorGlass)"
-          />
-          <path
-            d="M220 58c44 0 72 26 72 60s-28 55-72 55-72-22-72-55 28-60 72-60z"
-            stroke="#000" strokeOpacity="0.55" strokeWidth="2"
-          />
+          <path d="M220 84c44 0 72 26 72 60s-28 55-72 55-72-22-72-55 28-60 72-60z" fill="url(#visorGlass)" />
+          <path d="M220 84c44 0 72 26 72 60s-28 55-72 55-72-22-72-55 28-60 72-60z" stroke="#000" strokeOpacity="0.55" strokeWidth="2" />
 
-          {/* face — clipped so it never slides past the visor edge */}
           <g clipPath="url(#visorClip)">
             <g className="rig-face">
-              <ellipse className="eddy-eye" cx="190" cy="112" rx="14" ry="15" fill="#FFC24D" />
-              <circle cx="246" cy="110" r="7" fill="#FFC24D" />
-              <path d="M258 98a17 17 0 0 1 0 24" stroke="#FFC24D" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <path d="M268 88a31 31 0 0 1 0 44" stroke="#FFC24D" strokeWidth="5.5" strokeLinecap="round" fill="none" opacity="0.85" />
-              <path d="M196 140c10 11 42 11 52 0" stroke="#FFC24D" strokeWidth="6" strokeLinecap="round" fill="none" />
+              <ellipse className="eddy-eye" cx="190" cy="138" rx="14" ry="15" fill="#FFC24D" />
+              <circle cx="246" cy="136" r="7" fill="#FFC24D" />
+              <path d="M258 124a17 17 0 0 1 0 24" stroke="#FFC24D" strokeWidth="5.5" strokeLinecap="round" fill="none" />
+              <path d="M268 114a31 31 0 0 1 0 44" stroke="#FFC24D" strokeWidth="5.5" strokeLinecap="round" fill="none" opacity="0.85" />
+              <path d="M196 166c10 11 42 11 52 0" stroke="#FFC24D" strokeWidth="6" strokeLinecap="round" fill="none" />
             </g>
           </g>
 
-          {/* glass reflections sit above the face so it reads as behind glass */}
-          <path d="M164 82c14-16 36-24 58-24-28 6-48 20-58 38z" fill="#fff" opacity="0.13" />
-          <ellipse cx="268" cy="150" rx="26" ry="9" fill="#fff" opacity="0.05" transform="rotate(-16 268 150)" />
-          </g>
+          <path d="M164 108c14-16 36-24 58-24-28 6-48 20-58 38z" fill="#fff" opacity="0.13" />
+          <ellipse cx="268" cy="176" rx="26" ry="9" fill="#fff" opacity="0.05" transform="rotate(-16 268 176)" />
         </g>
       </svg>
     </div>

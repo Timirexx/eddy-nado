@@ -192,17 +192,39 @@
   transform-style: preserve-3d;
   will-change: transform;
 }
-.rig-arms {
-  transform-origin: 220px 275px;
+/* ---- Limb joints ----
+   Every origin sits on the joint's own centre in SVG user units. Rotating a
+   limb about anything else is what makes a rig look like sliding cut-outs
+   rather than something hinged. Groups are nested, so each rotation composes
+   with its parent: the shoulder carries the whole arm, the elbow carries only
+   the forearm and hand. */
+
+.rig-legs {
+  transform-origin: 220px 380px;
   transform:
-    translate3d(var(--arms-tx, 0px), var(--arms-ty, 0px), 0)
-    rotateY(var(--arms-ry, 0deg));
-  transform-style: preserve-3d;
+    translate3d(var(--legs-tx, 0px), var(--legs-ty, 0px), 0)
+    rotate(var(--legs-rot, 0deg));
   will-change: transform;
 }
+.hip-l { transform-origin: 194px 388px; transform: rotate(var(--hip-l-rot, 0deg)); }
+.hip-r { transform-origin: 246px 388px; transform: rotate(var(--hip-r-rot, 0deg)); }
+.knee-l { transform-origin: 194px 436px; transform: rotate(var(--knee-l-rot, 0deg)); }
+.knee-r { transform-origin: 246px 436px; transform: rotate(var(--knee-r-rot, 0deg)); }
+.foot-l { transform-origin: 194px 476px; transform: rotate(var(--foot-l-rot, 0deg)); }
+.foot-r { transform-origin: 246px 476px; transform: rotate(var(--foot-r-rot, 0deg)); }
+
+.arm-l { transform-origin: 164px 268px; transform: rotate(var(--arm-l-rot, 0deg)); will-change: transform; }
+.arm-r { transform-origin: 276px 268px; transform: rotate(var(--arm-r-rot, 0deg)); will-change: transform; }
+.forearm-l { transform-origin: 164px 306px; transform: rotate(var(--elbow-l-rot, 0deg)); }
+.forearm-r { transform-origin: 276px 306px; transform: rotate(var(--elbow-r-rot, 0deg)); }
+.hand-l { transform-origin: 164px 350px; transform: rotate(var(--wrist-l-rot, 0deg)); }
+.hand-r { transform-origin: 276px 350px; transform: rotate(var(--wrist-r-rot, 0deg)); }
+.fingers-l { transform-origin: 164px 380px; transform: rotate(var(--fingers-l, 0deg)); }
+.fingers-r { transform-origin: 276px 380px; transform: rotate(var(--fingers-r, 0deg)); }
+
 .rig-head {
-  /* At the base of the neck, shifted for the head group's inner translate, so
-     the head swings on the neck rather than pivoting about its own middle. */
+  /* At the base of the neck, so the head swings on the neck rather than
+     pivoting about its own middle. */
   transform-origin: 220px 238px;
   transform:
     translate3d(var(--head-tx, 0px), var(--head-ty, 0px), 0)
