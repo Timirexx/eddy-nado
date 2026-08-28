@@ -169,45 +169,67 @@
 
 .eddy-svg { position: relative; display: block; width: 100%; height: auto; overflow: visible; }
 
-/* Each group gets its own origin so rotation pivots where a joint would be. */
+/* Each group pivots where its joint would be: the body at the hips, the arms at
+   the shoulder line, the head at the neck. Rotating everything about a shared
+   centre is what makes rigs look like sliding stickers.
+   will-change promotes each group so the rAF loop only touches compositing. */
 .rig-podium {
-  transform: translateX(calc(var(--body-tx, 0px) * 0.12));
-  transition: none;
+  transform: translateX(calc(var(--body-tx, 0px) * 0.1));
+}
+.rig-shadow {
+  transform: translateX(var(--shadow-tx, 0px)) scaleX(var(--shadow-sx, 1));
+  transform-origin: 220px 495px;
+  transform-box: fill-box;
+  will-change: transform;
 }
 .rig-body {
-  transform-origin: 210px 400px;
+  transform-origin: 220px 400px;
   transform:
     translate3d(var(--body-tx, 0px), var(--body-ty, 0px), 0)
     rotateY(var(--body-ry, 0deg))
-    rotateX(var(--body-rx, 0deg));
+    rotateX(var(--body-rx, 0deg))
+    rotateZ(var(--body-rz, 0deg));
   transform-style: preserve-3d;
+  will-change: transform;
 }
 .rig-arms {
-  transform-origin: 210px 260px;
+  transform-origin: 220px 275px;
   transform:
     translate3d(var(--arms-tx, 0px), var(--arms-ty, 0px), 0)
     rotateY(var(--arms-ry, 0deg));
   transform-style: preserve-3d;
+  will-change: transform;
 }
 .rig-head {
-  transform-origin: 210px 175px;
+  /* At the base of the neck, shifted for the head group's inner translate, so
+     the head swings on the neck rather than pivoting about its own middle. */
+  transform-origin: 220px 238px;
   transform:
     translate3d(var(--head-tx, 0px), var(--head-ty, 0px), 0)
     rotateY(var(--head-ry, 0deg))
-    rotateX(var(--head-rx, 0deg));
+    rotateX(var(--head-rx, 0deg))
+    rotateZ(var(--head-rz, 0deg));
   transform-style: preserve-3d;
+  will-change: transform;
 }
-.rig-face { transform: translate3d(var(--face-tx, 0px), var(--face-ty, 0px), 0); }
+.rig-face {
+  transform: translate3d(var(--face-tx, 0px), var(--face-ty, 0px), 0);
+  will-change: transform;
+}
 
 /* The ear pods ride the head group's rotation, which is what we want — they
    previously carried a counter-transform built from --head-ry, but that
    multiplies a deg value into translateX and is invalid CSS, so it silently
    did nothing. */
 
-.eddy-eye { animation: eddy-blink 6.4s infinite; transform-origin: 184px 99px; }
+.eddy-eye {
+  animation: eddy-blink 6.4s infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
 @keyframes eddy-blink {
-  0%, 92%, 100% { transform: scaleY(1); }
-  95% { transform: scaleY(0.1); }
+  0%, 93%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.08); }
 }
 
 /* ---------- Feature strip ---------- */
