@@ -167,20 +167,41 @@ export default function EddyRobot() {
       // Resting splay. In SVG a positive rotation swings a hanging limb toward
       // -x, so the signs are mirrored to push both arms away from the torso;
       // without it they hang flat against the body and read as welded on.
-      const armSwing = arms.x;
-      set('--arm-l-rot', `${7 + armSwing * 9 - absTurn * 4 + breath * 1.6}deg`);
-      set('--arm-r-rot', `${-7 + armSwing * 9 + absTurn * 4 - breath * 1.6}deg`);
+      // Open/tuck is directional: turning right opens the far (left) shoulder
+      // and tucks the near one, and vice versa. Driven off the softer arms
+      // spring so the swing trails the torso.
+      const at = arms.x;
+      const openL = Math.max(0, at);
+      const tuckL = Math.max(0, -at);
+      const openR = Math.max(0, -at);
+      const tuckR = Math.max(0, at);
 
-      // Elbows keep a resting bend and flex a little more as the body works —
-      // a perfectly straight arm is the other half of the "stiff" read.
-      set('--elbow-l-rot', `${5 + Math.max(0, armSwing) * 9 + absTurn * 3 + breath2 * 1.4}deg`);
-      set('--elbow-r-rot', `${-5 + Math.min(0, armSwing) * 9 - absTurn * 3 - breath2 * 1.4}deg`);
+      // Clamped to a minimum splay — a joint limit. Without it the swing can
+      // cancel the resting angle at full turn and the arm folds flat into the
+      // torso, which is the stiff pose this was meant to remove.
+      const armL = 12 + openL * 6 - tuckL * 5 + breath * 1.6;
+      const armR = -12 - openR * 6 + tuckR * 5 - breath * 1.6;
+      set('--arm-l-rot', `${Math.max(6, armL)}deg`);
+      set('--arm-r-rot', `${Math.min(-6, armR)}deg`);
 
-      // Wrists and fingers ride the softest spring, so they settle last.
-      set('--wrist-l-rot', `${limbs.x * 11 + breath2 * 2.4}deg`);
-      set('--wrist-r-rot', `${limbs.x * 11 - breath2 * 2.4}deg`);
-      set('--fingers-l', `${4 + Math.abs(limbs.x) * 7 + breath * 2}deg`);
-      set('--fingers-r', `${4 + Math.abs(limbs.x) * 7 - breath * 2}deg`);
+      // Elbows bend the forearm back INWARD, opposite the shoulder splay. The
+      // upper arm hangs away from the ribs while the forearm returns toward the
+      // thigh — arms that splay at both joints read as a deliberate pose.
+      // Also clamped, so the elbow keeps a bend at every extreme — a forearm
+      // that snaps straight is the other half of the stiff read.
+      const elbowL = -6 - Math.abs(at) * 3 + breath2 * 1.4;
+      const elbowR = 6 + Math.abs(at) * 3 - breath2 * 1.4;
+      set('--elbow-l-rot', `${Math.min(-2.5, elbowL)}deg`);
+      set('--elbow-r-rot', `${Math.max(2.5, elbowR)}deg`);
+
+      // Wrists counter the shoulder-plus-elbow angle so the hands hang roughly
+      // plumb, the way a real hand does regardless of how the arm is held.
+      set('--wrist-l-rot', `${4 + limbs.x * 9 + breath2 * 2.2}deg`);
+      set('--wrist-r-rot', `${-4 + limbs.x * 9 - breath2 * 2.2}deg`);
+
+      // Fingers keep a loose curl and tighten slightly as the body works.
+      set('--fingers-l', `${6 + Math.abs(limbs.x) * 6 + breath * 2}deg`);
+      set('--fingers-r', `${-6 - Math.abs(limbs.x) * 6 - breath * 2}deg`);
 
       /* ---------- Legs ----------
        * The pelvis counter-rotates against the shoulders and the weight shifts
@@ -374,13 +395,19 @@ export default function EddyRobot() {
             <g className="forearm-l">
               <circle cx="164" cy="306" r="13" fill="url(#jointSphere)" />
               <path d="M153 308h22v36c0 6-5 10-11 10s-11-4-11-10z" fill="url(#shellB)" />
+              {/* Hand seen edge-on: narrow silhouette, palm turned toward the
+                  thigh. A wide plate with fingers straight down is a palm
+                  facing the camera, which is what made the pose look staged. */}
               <g className="hand-l">
                 <circle cx="164" cy="350" r="10" fill="url(#jointSphere)" />
-                <path d="M153 352h22v18c0 7-5 12-11 12s-11-5-11-12z" fill="url(#jointA)" />
+                <path d="M158 350h13c2 0 4 2 4 5v13c0 7-5 12-11 12s-10-5-10-12v-13c0-3 2-5 4-5z" fill="url(#jointA)" />
+                <path d="M159 352h5v18c0 4-2 6-4 6z" fill="#fff" opacity="0.07" />
                 <g className="fingers-l">
-                  <path d="M156 380c-3 7-2 13 2 16" stroke="#1B1F26" strokeWidth="4.4" strokeLinecap="round" />
-                  <path d="M164 383c-2 7-1 12 3 15" stroke="#1B1F26" strokeWidth="4.4" strokeLinecap="round" />
-                  <path d="M172 381c-1 7 0 12 4 14" stroke="#1B1F26" strokeWidth="4.4" strokeLinecap="round" />
+                  {/* Curling inward (+x) and back, not down at the viewer. */}
+                  <path d="M160 376c1 8 5 12 11 12" stroke="#22262E" strokeWidth="5.4" strokeLinecap="round" fill="none" />
+                  <path d="M166 375c1 7 5 11 10 11" stroke="#1A1E25" strokeWidth="4.8" strokeLinecap="round" fill="none" />
+                  {/* Thumb, on the inner edge where it faces the body. */}
+                  <path d="M173 359c4 3 5 7 3 11" stroke="#2C313A" strokeWidth="4.2" strokeLinecap="round" fill="none" />
                 </g>
               </g>
             </g>
@@ -393,13 +420,16 @@ export default function EddyRobot() {
             <g className="forearm-r">
               <circle cx="276" cy="306" r="13" fill="url(#jointSphere)" />
               <path d="M265 308h22v36c0 6-5 10-11 10s-11-4-11-10z" fill="url(#shellB)" />
+              {/* Mirror of the left hand: fingers curl toward -x, thumb on the
+                  inner edge, so both palms face the body. */}
               <g className="hand-r">
                 <circle cx="276" cy="350" r="10" fill="url(#jointSphere)" />
-                <path d="M265 352h22v18c0 7-5 12-11 12s-11-5-11-12z" fill="url(#jointA)" />
+                <path d="M269 350h13c2 0 4 2 4 5v13c0 7-4 12-10 12s-11-5-11-12v-13c0-3 2-5 4-5z" fill="url(#jointA)" />
+                <path d="M282 352h5v18c0 4-2 6-4 6z" fill="#fff" opacity="0.07" />
                 <g className="fingers-r">
-                  <path d="M268 380c-3 7-2 13 2 16" stroke="#1B1F26" strokeWidth="4.4" strokeLinecap="round" />
-                  <path d="M276 383c-2 7-1 12 3 15" stroke="#1B1F26" strokeWidth="4.4" strokeLinecap="round" />
-                  <path d="M284 381c-1 7 0 12 4 14" stroke="#1B1F26" strokeWidth="4.4" strokeLinecap="round" />
+                  <path d="M280 376c-1 8-5 12-11 12" stroke="#22262E" strokeWidth="5.4" strokeLinecap="round" fill="none" />
+                  <path d="M274 375c-1 7-5 11-10 11" stroke="#1A1E25" strokeWidth="4.8" strokeLinecap="round" fill="none" />
+                  <path d="M267 359c-4 3-5 7-3 11" stroke="#2C313A" strokeWidth="4.2" strokeLinecap="round" fill="none" />
                 </g>
               </g>
             </g>
