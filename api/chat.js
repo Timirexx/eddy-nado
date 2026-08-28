@@ -3,14 +3,20 @@ import { buildSystemPrompt } from './_system-prompt.js';
 import { checkRateLimit } from './_rate-limit.js';
 import { recordActivity } from './_leaderboard-store.js';
 
-const MODEL = 'claude-opus-5';
+// Haiku 4.5 is the cheapest current model: $1/$5 per MTok against Opus 5's
+// $5/$25, so roughly 5x less for the same traffic. Overridable without a code
+// change if the quality tradeoff turns out to matter.
+const MODEL = process.env.EDDY_MODEL || 'claude-haiku-4-5';
 
-// max_tokens caps thinking and response text together on Opus 5, so this needs
-// headroom above the visible answer or long replies truncate mid-sentence.
-const MAX_TOKENS = 16000;
-
-// Opus 5 is unusually strong at medium effort, and chat wants the latency back.
+// `effort` is an Opus/Sonnet-4.6+ parameter and is REJECTED by Haiku 4.5 —
+// sending it turns every request into a 400. Gated on the model rather than
+// deleted, so switching back via EDDY_MODEL restores it automatically.
+const SUPPORTS_EFFORT = !/haiku/i.test(MODEL);
 const EFFORT = 'medium';
+
+// Haiku 4.5 caps output at 64K (Opus allows 128K); 16K is well inside both and
+// is plenty for a chat answer.
+const MAX_TOKENS = 16000;
 
 const MAX_MESSAGES = 40;
 const MAX_TEXT_CHARS = 8000;
@@ -155,7 +161,7 @@ export default async function handler(req, res) {
     const stream = client.messages.stream({
       model: MODEL,
       max_tokens: MAX_TOKENS,
-      output_config: { effort: EFFORT },
+      ...(SUPPORTS_EFFORT ? { output_config: { effort: EFFORT } } : {}),
       system,
       messages,
     });

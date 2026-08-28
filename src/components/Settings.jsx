@@ -312,7 +312,7 @@ export default function Settings({ onOpenLibrary }) {
 
       <Section title={t('settings.about')}>
         <Row label="Version" value={APP_VERSION} />
-        <Row label="Assistant model" value="Claude Opus 5" />
+        <Row label="Assistant model" value="Claude Haiku 4.5" />
         <Row label="Network" value="Ink · chain 57073" />
         <Row
           icon={DocsIcon}
