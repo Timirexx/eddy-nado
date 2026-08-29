@@ -314,12 +314,6 @@ export default function Settings({ onOpenLibrary }) {
         <Row label="Version" value={APP_VERSION} />
         <Row label="Assistant model" value="Claude Haiku 4.5" />
         <Row label="Network" value="Ink · chain 57073" />
-        <Row
-          icon={DocsIcon}
-          label="Source code"
-          description="Open source on GitHub"
-          href={REPO}
-        />
       </Section>
 
       {toast && <div className="set-toast" role="status">{toast}</div>}
