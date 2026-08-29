@@ -36,12 +36,6 @@ export const STRINGS = {
     tr: 'Liderlik Tablosu', it: 'Classifica', ko: '순위표', vi: 'Bảng xếp hạng',
     sw: 'Ubao wa Viongozi', nl: 'Ranglijst',
   },
-  'nav.watching': {
-    en: 'Watching', zh: '关注', hi: 'निगरानी', es: 'Siguiendo', fr: 'Suivi', ar: 'المتابعة',
-    bn: 'পর্যবেক্ষণ', pt: 'A acompanhar', ru: 'Отслеживание', ur: 'نگرانی', id: 'Dipantau',
-    de: 'Beobachtet', ja: 'ウォッチ', pcm: 'Watching', tr: 'İzleniyor', it: 'Osservati',
-    ko: '관찰 중', vi: 'Đang theo dõi', sw: 'Inafuatiliwa', nl: 'Gevolgd',
-  },
   'nav.settings': {
     en: 'Settings', zh: '设置', hi: 'सेटिंग्स', es: 'Ajustes', fr: 'Paramètres', ar: 'الإعدادات',
     bn: 'সেটিংস', pt: 'Definições', ru: 'Настройки', ur: 'ترتیبات', id: 'Pengaturan',

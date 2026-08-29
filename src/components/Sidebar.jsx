@@ -6,7 +6,6 @@ import {
   EddyMark,
   ChatIcon,
   HistoryIcon,
-  WatchingIcon,
   SettingsIcon,
   NewChatIcon,
   CloseIcon,
@@ -17,7 +16,6 @@ const NAV_ITEMS = [
   { key: 'chat', labelKey: 'nav.chat', icon: ChatIcon },
   { key: 'history', labelKey: 'nav.history', icon: HistoryIcon },
   { key: 'leaderboard', labelKey: 'nav.leaderboard', icon: TrophyIcon },
-  { key: 'watching', labelKey: 'nav.watching', icon: WatchingIcon },
   { key: 'settings', labelKey: 'nav.settings', icon: SettingsIcon },
 ];
 

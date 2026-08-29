@@ -35,15 +35,6 @@ export function HistoryIcon() {
   );
 }
 
-export function WatchingIcon() {
-  return (
-    <svg className="nav-icon" viewBox="0 0 16 16" fill="none">
-      <path d="M3 8c1.5-3 4-4.5 5-4.5S12.5 5 13 8c-1.5 3-4 4.5-5 4.5S3.5 11 3 8z" stroke="currentColor" strokeWidth="1.3" />
-      <circle cx="8" cy="8" r="1.6" stroke="currentColor" strokeWidth="1.3" />
-    </svg>
-  );
-}
-
 export function SettingsIcon() {
   return (
     <svg className="nav-icon" viewBox="0 0 16 16" fill="none">
