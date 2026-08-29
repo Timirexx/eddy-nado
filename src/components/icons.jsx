@@ -159,6 +159,16 @@ export function CloseIcon() {
   );
 }
 
+export function HelpIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M6.1 6.3a1.9 1.9 0 1 1 2.7 1.7c-.6.3-.9.6-.9 1.3v.3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="8" cy="11.3" r="0.7" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function MicIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none">

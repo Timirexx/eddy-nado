@@ -6,6 +6,7 @@ import TopBar from './components/TopBar.jsx';
 import MobileHeader from './components/MobileHeader.jsx';
 import Leaderboard from './components/Leaderboard.jsx';
 import Settings from './components/Settings.jsx';
+import EddyDocs from './components/EddyDocs.jsx';
 import MessageThread from './components/MessageThread.jsx';
 import ChipsRow from './components/ChipsRow.jsx';
 import Composer from './components/Composer.jsx';
@@ -143,7 +144,14 @@ export default function App({ onGoHome }) {
             </div>
           ) : activeNav === 'settings' ? (
             <div className="panel-scroll">
-              <Settings onOpenLibrary={() => setActiveNav('history')} />
+              <Settings
+                onOpenLibrary={() => setActiveNav('history')}
+                onOpenDocs={() => setActiveNav('docs')}
+              />
+            </div>
+          ) : activeNav === 'docs' ? (
+            <div className="panel-scroll">
+              <EddyDocs onBack={() => setActiveNav('settings')} />
             </div>
           ) : (
             <>

@@ -73,7 +73,7 @@ function Row({ icon: Icon, label, description, value, onClick, href, danger, chi
   return <div className={className}>{content}</div>;
 }
 
-export default function Settings({ onOpenLibrary }) {
+export default function Settings({ onOpenLibrary, onOpenDocs }) {
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
   const { openConnectModal } = useConnectModal();
@@ -291,6 +291,12 @@ export default function Settings({ onOpenLibrary }) {
 
       {/* ---------------- Support ---------------- */}
       <Section title={t('settings.support')}>
+        <Row
+          icon={DocsIcon}
+          label="Eddy Docs"
+          description="A simple guide to what Eddy is and how to use it"
+          onClick={onOpenDocs}
+        />
         <Row
           icon={CloseIcon}
           label="Report an app issue"

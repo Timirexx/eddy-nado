@@ -1461,6 +1461,94 @@ nav.primary-nav { display: flex; flex-direction: column; gap: 2px; }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
+/* ---------- Eddy Docs ---------- */
+.docs-page {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 4px 20px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.docs-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 6px 4px;
+  margin: -6px 0 -6px -4px;
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+.docs-back span { font-size: 16px; line-height: 1; }
+.docs-back:hover { color: var(--accent); }
+.docs-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+[dir='rtl'] .docs-back span { transform: scaleX(-1); }
+
+.docs-card {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
+  padding: 18px 20px;
+}
+.docs-card-head { display: flex; align-items: center; gap: 11px; margin-bottom: 10px; }
+.docs-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px; height: 32px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--accent);
+}
+.docs-card-icon svg { width: 16px; height: 16px; }
+.docs-card-head h3 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 400;
+  margin: 0;
+}
+.docs-card-body p {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  line-height: 1.65;
+  margin: 0 0 8px;
+}
+.docs-card-body p:last-child { margin-bottom: 0; }
+.docs-note { font-size: 12.5px; color: var(--text-faint); font-style: italic; }
+
+.docs-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.docs-list li { font-size: 13.5px; color: var(--text-muted); line-height: 1.55; }
+.docs-list strong { color: var(--text); font-weight: 600; }
+[dir='rtl'] .docs-list { padding-left: 0; padding-right: 18px; }
+
+.docs-faq { display: flex; flex-direction: column; }
+.docs-faq-item {
+  padding: 13px 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+.docs-faq-item:last-child { border-bottom: none; padding-bottom: 0; }
+.docs-faq-item:first-child { padding-top: 0; }
+.docs-faq-q { font-size: 13.5px; font-weight: 600; margin-bottom: 5px; }
+.docs-faq-a { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
 /* ---------- Mobile chrome (hidden on desktop) ----------
    Declared here so the desktop cascade explicitly excludes them; the phone
    layout below is purely additive and never alters desktop rules. */
@@ -1712,6 +1800,12 @@ nav.primary-nav { display: flex; flex-direction: column; gap: 2px; }
   .settings { padding: 12px 14px 28px; gap: 18px; }
   .set-header h2 { font-size: 21px; }
   .set-header p { font-size: 12.5px; }
+
+  /* ---- Eddy Docs ---- */
+  .docs-page { padding: 12px 14px 28px; gap: 14px; }
+  .docs-card { padding: 15px 16px; }
+  .docs-card-head h3 { font-size: 16px; }
+  .docs-back { min-height: 32px; }
 
   /* Controls drop below their label rather than being squeezed beside it —
      the theme switcher and a description cannot share a 360px row. */
